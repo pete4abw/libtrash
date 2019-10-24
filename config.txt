@@ -1,0 +1,74 @@
+libtrash is a shared library, not a user program. For that reason, it is
+"forbidden" to communicate directly with the user. That raises an important
+issue on systems with more than one user: how can users know which is the
+configuration currently being used by libtrash? "With which options has it
+been compiled? Can I rest assured that it will keep me from permanently
+destroying file x?"
+
+To overcome this problem, when libtrash is installed a file containing its
+compile-time defaults is generated (from file libtrash.conf) and installed -
+by default - in /etc/libtrash.conf. Since this file simply reflects the
+current configuration of libtrash, libtrash never reads it: if you edit it,
+that will never affect libtrash's behaviour in any way.
+
+That file is created with world-readable permissions and no write-permission
+(not even for root). As stated, its purpose is to allow users to know which
+is the configuration currently used by libtrash, so allowing it to be easily
+changed is a bad idea: doing so is a bad idea, because it not only leaves
+libtrash's configuration unchanged as it will also mistake users about the
+current configuration of libtrash.
+
+This way, a user can always know what to expect from the current libtrash
+installation. But what if the user would like it to behave in a different
+way? The correct procedure (besides recompiling libtrash, which should never
+prove necessary) is to identify which setting(s) in the system-wide
+configuration file need(s) to be overriden, then create a file called
+.libtrash in the user's home directory and then adding to it one or more
+lines (similar to the ones found in /etc/libtrash.conf) in which new
+value(s) for the "offending" setting(s) are provided. You don't need to set
+all options in your personal configuration file: only those settings in the
+system-wide configuration file with which you disagree should be redefined
+in your personal configuration file; the other settings (the ones which you
+don't want to change) will continue being used, because they are
+compile-time defaults which haven't been overriden.
+
+An example: a quick inspection of /etc/libtrash.conf reveals to Alice that
+GLOBAL_PROTECTION is disactivated. Besides that, Alice is also worried about
+accidentally truncating files when opening them in write-mode, and the
+system-wide configuration file shows that calls to fopen(), freopen() and
+open() aren't being intercepted . On the other hand, though, Alice doesn't
+consider it worthwhile to keep MSDOS executables in her trash can after
+their "deletion", because she knows she won't be using them on her GNU/Linux
+system, but libtrash, as it is currently configured, doesn't discriminate
+files based on their names' extensions. What must Alice do, if she is happy
+with the rest of the libtrash configuration parameters displayed in
+/etc/libtrash.conf?
+
+Edit /home/alice/.libtrash, and append the following lines:
+
+GLOBAL_PROTECTION = YES
+INTERCEPT_FOPEN = YES
+INTERCEPT_FREOPEN = YES
+INTERCEPT_OPEN = YES
+IGNORE_EXTENSIONS= o;exe;com
+
+The other settings will continue in use.
+
+Summary: 
+
+- NEVER edit the system-wide configuration file!
+- Configure libtrash to suit your personal taste by creating and editing a
+personal configuration file called ".libtrash" in your home dir, and use it
+only to override settings which you dislike.
+- When editing that file, follow the rules stated near the top of
+/etc/libtrash.conf, so that your personal configuration file can be
+successfully parsed by libtrash. Remember: if it can't understand your
+choices in your configuration file, libtrash hasn't got a way to tell you
+about it!
+
+Finally: although the defaults should be fine for the majority of users,
+the only way to learn about the different configuration options is to read
+the comments inside libtrash.conf. So, if you feel like it, give it a try! : )
+
+- End
+

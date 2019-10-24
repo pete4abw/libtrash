@@ -1,0 +1,47 @@
+- eliminate minor code duplication: we are running dlsym() for a second
+time inside do_fopen_or_freopen_or_open() (after we have already done so in
+init()).
+
+- rethink support for *at() functions.
+
+- make *at() wrappers honor the preference set in in_case_of_failure;
+currently, they all fail if they can't derive the correct path using
+make_abs_path_from_dirfd_relpath().
+
+- Reimplement libtrash using partition-specific trash cans. This has always
+been the number one feature request. It would put an end to the lengthy file
+copy operations which occur whenever GLOBAL_PROTECTION is set to YES and a
+large file outside of the partition on which the user's home directory
+resides is deleted. This is a major change, and I am afraid it will have to
+wait until I have some spare time.
+
+Currently I plan to have a "Trash" directory beneath each mount point, and
+populate it with user-specific trash cans which will only be
+readable/removeable by their owners. All the different trash cans belonging
+to a user (one on each mounted partition) will be connected through symbolic
+links to points inside a "Trash" directory in that user's home dir,
+something which will be done by a small script which runs when the system
+boots. That same script will also create the "Trash" directories beneath
+each mount point (because, as a rule, root privileges will be necessary to
+do that).
+
+Some people wrote that symbolic links are too "fragile": eg, "what if mount
+points are changed? Then the links in the users' trash directories will
+become dangling symlinks". However, others pointed out (convincingly, IMHO)
+that in a production system mount points won't be changing on regular basis,
+and that after a reboot everything will once again be working correctly.
+
+Feedback on this issue is welcome; however, code contributions are even more
+so... :-)
+
+- Allow the user to define IGNORE_USERS: a list of usernames for which
+libtrash is disabled. This was suggested by Frederic Connes and it would be
+useful, eg, for daemons.
+
+- Allow a maximum file size limit to be defined for "global protection"
+operations. That way the user would be able to tell libtrash to ignore (ie,
+really delete) files which reside on a partition different from the one in
+which her home dir is located if she fears that copying that file would be
+too slow. This was suggested by Raik Lieske, and would be a a nice thing to
+have until libtrash gets partition-specific trash cans.
+

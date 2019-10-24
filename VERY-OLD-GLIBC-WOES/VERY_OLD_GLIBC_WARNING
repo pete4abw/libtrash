@@ -1,0 +1,24 @@
+NOTE: as of late 2007, this most certainly does not apply to you. : )
+
+It is only here for historical reasons.
+
+- Manuel!
+
+=======================
+
+GNU libc 2.2.5 contains a bug which causes mutt to crash while libtrash is
+running. Until a new GNU libc version is released, you can
+
+(i) recompile GNU libc, after applying the included patch
+(patch-glibc-2.2.5.diff);
+
+(ii) completely disable libtrash when starting mutt ("LD_PRELOAD="" mutt");
+
+(iii) use another MUA.
+
+Again, strange as it may seem, this *isn't* a bug in libtrash: it is a bug
+in GNU libc which shows up when you use libtrash.
+
+
+-- Manuel Arriaga
+(2002/05/26)

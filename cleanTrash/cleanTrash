@@ -1,0 +1,226 @@
+#!/usr/bin/perl
+#
+# Copyright (C) 2001
+#   Author: Daniel Sadilek <d.sadilek@globalview.de>,
+#   Agency: Global View <http://www.globalview.de>, Berlin/Germany
+#
+# changed: 2002-01-07, Daniel Sadilek <d.sadilek@globalview.de>
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+#
+# See the file COPYING for details.
+#
+##########################################################################
+#
+# cleanTrash is a script for use with libtrash by
+# Manuel Arriaga (manuelarriaga@fastmail.fm),
+# http://www.m-arriaga.net/software/libtrash/
+# It looks for new files in all users' Trash-directories and appends their
+# names to a history-files in the users' home-directories.
+# If one user's Trash's size exceedes a given maximum size, files will be
+# deleted from top of the history-file (oldest files first) until the
+# Trash's size is smaller than the maximum size.
+# It is thought to be executed regularly via cronjob by root, e.g.
+# 3,13,23,33,43,53 * * * *   root   /usr/local/bin/cleanTrash
+#
+
+##########################################################################
+### CONFIGURATION
+##########################################################################
+
+# Trash-directory relative to home-dir
+$cfgTrashDir = '/Trash';
+
+# Trash-history file relative to home-dir
+$cfgTrashHistFile = '/.trashhist';
+
+# maximum-Trash-size in kilo-bytes
+$cfgMaxTrashSize = 15000;
+
+##########################################################################
+### PROGRAM
+##########################################################################
+
+use File::Basename;
+
+# use -q to make libtrash quiet
+$verbose = 1;
+if (@ARGV) {
+    if (@ARGV == 1 && $ARGV[0] eq '-q') {
+	$verbose = 0;
+    } else {
+	$myname = basename("$0");
+	print "usage: $myname [-q]\n";
+	exit(1);
+    }
+}
+
+# let awk parse the home directories
+open(AWK, 'gawk -F : \'{printf("%s\n",$6);}\' /etc/passwd|');
+
+# read them as keys into a hash to sort out doubles
+while (<AWK>) {
+	$_ =~ s/(.*)\/?\n/$1/;
+	# don't take home-dirs that contain a dollar-sign
+	# (they are dummy-homes for samba)
+	if ($_ !~ /\$/) {
+		$homes{$_} = 1;
+	}
+}
+close(AWK);
+
+#%homes = ($ENV{'HOME'} => 1);
+# loop through all home-dirs
+HOME: foreach $home (keys(%homes)) {
+
+	print "\nExamining $home$cfgTrashDir...\n" if ($verbose);
+    
+	@histFiles = &readTrashHist($home);
+	@newFiles = ();
+	
+	if (!(-e "$home$cfgTrashDir")) {
+		print "  -> No trash-directory. Skipping.\n" if ($verbose);
+		next HOME;
+	}
+    
+	# let "find" find all regular files under home-dir/Trash
+	open(FIND, "find $home$cfgTrashDir -type f 2>/dev/null |");
+        while (<FIND>) {
+	
+		$_ =~ s/(.*)\n/$1/;
+		$fileName = $_;
+		
+		#print "  -> Found file $fileName... ";
+		# check if file is already in history-list
+		$contained = &trashHistContains(\@histFiles, $fileName);
+		
+		if (!$contained) {
+			print "  -> NEW: $fileName\n" if ($verbose);
+			#print "NEW\n";
+			push(@newFiles, $fileName);
+		} else {
+			#print "old\n";
+		}
+        }
+	close(FIND);
+	
+	# append new files to the history-list
+	push(@histFiles, @newFiles);
+	
+	# test if Trash is too big
+	$maxSize = $cfgMaxTrashSize;
+	$size = &getSize("$home$cfgTrashDir");
+	print "  -> Trash has size $size... " if ($verbose);
+	if ($size <= $maxSize) {
+		print "OK\n" if ($verbose);
+	} else {
+		print "TOO BIG\n" if ($verbose);
+		# loop through history, begin with oldest entry and
+		# delete so long that size becomes smaller than maxSize
+		for ($i = 0; $i <= $#histFiles; $i++) {
+			$fileSize = &getSize($histFiles[$i]);
+			if ($size > $maxSize) {
+				print "  -> Deleting "
+					.$histFiles[$i]." ($fileSize kB)\n"
+					 if ($verbose);
+				if (-e $histFiles[$i]) {
+					system("TRASH_OFF=YES rm -f \"$histFiles[$i]\"");
+				}
+				$histFiles[$i] = "";
+				$size -= $fileSize;
+				print "       -> ".($size-$maxSize)
+					." kB too much left\n" if ($verbose);
+			} else {
+				$i = $#histFiles + 1;
+			}
+		}
+	}
+	
+	# save history-list
+	&saveTrashHist(\@histFiles, $home);
+    
+}
+
+print "\n" if ($verbose);
+	
+##########################################################################
+### FUNCTIONS
+##########################################################################
+
+sub readTrashHist {
+        (my $home) = @_;
+	my @trashFiles = ();
+	
+	# read the history-file
+	if (open(HISTFILE, "<$home$cfgTrashHistFile")) {
+		$i = 0;
+		while (<HISTFILE>) {
+			$_ =~ s/(.*)\n/$1/;
+			if (-e $_) {
+				$trashFiles[$i] = $_;
+				$i++;
+			}
+		}
+		close(HISTFILE);
+	} else {
+		print "  -> No history-file in $home yet.\n" if ($verbose);
+		@trashFiles = ();
+	}
+	return @trashFiles;
+}
+
+sub saveTrashHist {
+	(my $trashFilesRef, my $home) = @_;
+	my $file;
+
+	# save history-file
+	if (open(HISTFILE, ">$home$cfgTrashHistFile")) {
+		foreach $file (@$trashFilesRef) {
+			if ($file ne "") {
+				#print "  -> Adding to history-file: $file\n";
+				print HISTFILE "$file\n" if ($verbose);
+			}
+		}
+		close(HISTFILE);
+	} else {
+		print "  -> ERROR: Can not write history-file "
+			."$home$cfgTrashHistFile.\n";
+		exit(1);
+	}
+}
+
+# $yesNo = &trashHistContains(\@trashFiles, $fileName)
+sub trashHistContains {
+	(my $trashFilesRef, my $fileName) = @_;
+	foreach $trashFile (@$trashFilesRef) {
+		if ($fileName eq $trashFile) {
+			return 1;
+		}
+	}
+	return 0;
+}
+
+# returns the size of the given file or directory with all sub-dirs in kB
+sub getSize {
+        (my $fileName) = @_;
+	my $size;
+
+	open(DU, "du -s -k \"$fileName\"|")
+	    || die ("Could not get size of $filename");
+	$size = <DU>;
+	close(DU);
+	$size =~ /(^\d*)/;
+	$size = $1;
+	return $size;
+}

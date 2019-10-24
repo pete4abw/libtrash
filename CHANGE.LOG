@@ -1,0 +1,480 @@
+I consider libtrash pretty much "stable", in the sense that I don't have any
+immediate plans of adding new features and that I don't know of any bugs. Of
+course, if any problem, bug or misbehaviour is either reported or detected
+by me (during my daily usage of libtrash), I will promptly investigate it,
+correct the relevant section of the code and then release a new, corrected
+version.
+
+Yet, I do hope that you will tell me about any important feature(s) you
+think libtrash is still lacking! :-)
+
+- Manuel Arriaga (2002/08/20)
+
+
+--------------------------------------------------------------------------
+
+Changes 0.1 -> 0.2: (2001-08-11)
+
+- Fixed bug introduced into the code just before releasing libtrash-0.1. It
+should now run as I originally meant it to. The fix consisted in adding the
+line
+
+*d_ptr = '\0';
+
+at line 1639 of file main.c, inside function "cleanse_path()".
+
+- Fixed macro bug: if you follow the instructions at the top of the source
+file to (dis|e)nable debug messages, it now respects your option.
+
+--------------------
+
+Changes 0.2 -> 0.3 (2001-08-18)
+
+- Fixed bug in found_under_dir() which would cause false positives in cases
+such as when /dir-a is in the directory list and found_under_dir() is asked
+whether /dir-abc is under that directory list. Did so by adding second test
+to the if statement in that function, checking if dir_name is followed by a
+slash in abs_path.
+
+- Reorganized code, dividing it into three separate files, and performed
+necessary changes to the scope of some variables.
+
+- Now libtrash is disabled by setting an environmental variable, TRASH_OFF,
+to YES. This allows us to offer the user the option to have libtrash, when
+disabled, recall her, after a program exits, that it isn't running and that
+it might be a good idea to re-enable it. 
+
+- The scripts libtrash_off, libtrash_on and hardrm are no longer provided;
+tips on how to implement their functionality using shell aliases are offered
+in the README file.
+
+- The code which sets the configuration variables from values in the
+environment has been encapsulated into a function called get_conf_env().
+This way, besides achieving a better structured _init(), we open the way for
+allowing file-based configuration in the future (e.g., in the form of an
+alternative get_conf_file() function).
+
+- Now the Makefile uses 'ginstall' rather than 'cp' to put the lib in its
+place.
+
+-------------------
+
+Changes 0.3 -> 0.4 (2001-08-20)
+
+- Warnings about libtrash being disabled are now printed to stderr rather
+than stdout, so that shell scripts which process the output of other
+programs don't get mixed up with the warning. (Most notoriously, if you
+disabled libtrash - by setting TRASH_OFF=YES in the environment - before
+compiling the Linux kernel it would fail because the Makefile would set the
+variable ARCH incorrectly due to an error processing the output of 
+
+shell uname -m | sed -e s/i.86/i386/ -e s/sun4u/sparc64/ -e s/arm.*/arm/ -e
+s/sa110/arm/
+
+which contained (more than) one warning. When the warning is printed to
+stderr instead, this problem no longer occurrs.
+
+- The configuration variable TRASH_RECURSE has been renamed to (the
+not-much-better name) TRASH_PROTECT_TRASH, in the hope of making its meaning
+(vaguely) clearer. As pointed out in the file README-1ST, this means that
+you must now set a different variable in your environment if you wish to
+override this compile-time default.
+
+- Rewrote the end of unlink().
+
+- build_absolute_path now invokes cleanse_path.
+
+- lstat() is now used instead of stat(), so that symlinks are recognized as
+such, and code has been added to always ignore them.
+
+- dir_ok() has been modified so that it only requires/sets the permissions
+we really need for directories: write- and execute-permission.
+
+- files under UNREM_DIRS are now also protected from attempts to destroy
+them coming from users other than root;
+
+- added support for ignoring files with names ending in certain extensions
+(default list: ".o;.log;.aux").
+
+- major news: now calls to unlink(), rename(), fopen(), freopen() and open()
+can all be intercepted to make accidental data loss even more difficult.
+
+-----------------------
+
+Changes 0.4 -> 0.5 (2001-09-05)
+
+- Corrected bug (?) in reformulate_new_path(): it now uses access() to check
+the user's permissions over an existing directory.
+
+- Corrected bug in dir_ok(): the trash can (and all folders beneath it) are
+now created with read-permission.
+
+-----------------------
+
+Changes 0.5 -> 0.6 (2001/09/22)
+
+- (new!) support for file-based configuration of libtrash has finally been
+added.
+
+- corrected the way we handle dlsym() errors.
+
+- major code rewrite (fopen(), freopen() and open() were merged into a
+single "intelligent" - or "magic" :) - function).
+
+- added new features, such as LIBTRASH_CONF_FILE_UNREMOVABLE and (crude)
+support for inter-device file saving when GLOBAL_PROTECTION is set.
+
+- no more problems with SETUID programs being unable to successfully perform
+operations on files due to having insufficient permissions (the problem was
+caused by the fact that libtrash performed permission checks with the
+process' real UID rather than its effective UID - now the effective UID is
+used). 
+
+- libtrash is now compiled with REENTRANT defined, which is supposed to make
+libtrash thread-safe. (Besides the use of errno, there was nothing
+"thread-unsafe" in libtrash; now, with REENTRANT defined, no problems should
+arise.)
+
+- when a wrapper fails, or the destruction of a "protected" file is denied,
+libtrash now tries to set a meaningful value in errno so that the calling
+program can "interpret" the cause of the error; if that proves itself
+impossible, it sets errno to zero in order to avoid having misleading error
+messages displayed to the user. (This happened often in previous versions of
+libtrash when an attempt to destroy a "protected" file failed: since the
+wrapper for unlink() didn't set errno to a meaningful value, rm usually
+printed the wrong error message. In such situations, libtrash now sets errno
+to EACCES, thereby generating a "insufficient permissions" error message,
+which - although not a perfect match - does hint at the reason of the
+failure.)
+
+- added Daniel Sadilek's cleanTrash script to the tarball, which helps in
+keeping the disk usage by libtrash at an acceptable level.
+
+- added IGNORE_EDITOR_TEMPORARY option.
+
+----------------------
+
+Changes 0.6 -> 0.7 (2002/01/05)
+
+- Restructured libtrash, so that the initialization routine is called every
+time a wrapper function is invoked. This solves the only problems which have
+been reported: incompatibility with Samba and the apps in the procps package
+('ps', 'top', etc...). I very much preferred the previous design, but this
+really seems to be the only way to make libtrash completely transparent to
+other applications. I hope this won't have a noticeable impact on
+performance, although it certainly made the code a good lot uglier than I
+would like it to be.
+
+-----------------------
+
+Changes 0.7 -> 0.8 (2002/02/03)
+
+- Changed the code in TEST_FILE_EXISTENCE() (open-funs.c) so that special
+files (such as character devices, FIFOs, etc) are ignored.
+
+
+----------------------
+
+Changes 0.8 -> 0.9 (2002/03/21)
+
+- Now the 64-bit versions of fopen(), freopen() and open() are also wrapped
+-- fopen64(), freopen64() and open64(). This closes the gap which existed in
+the protection against accidental file truncation, e.g., with 'cp'. I didn't
+know that those functions existed, and always wondered why libtrash didn't
+work with 'cp'... Everything should work fine now.
+
+-----------------------
+
+Changes 0.9 -> 1.0 (2002/05/26)
+
+- Added handy configuration variable UNCOVER_DIRS.
+
+- Cleaned documentation.
+
+-----------------------
+
+Changes 1.0 -> 1.1 (2002/06/02)
+
+- UNCOVER_DIRS can now be used to easily "uncover" your own trash can, in
+case you have PROTECT_TRASH set. 
+
+- The README file now describes two ways to activate libtrash.
+
+------------------------
+
+Changes 1.1 -> 1.2 (2002/06/08)
+
+- Changed code in found_under_dir() so that directories named with a
+"trailing slash" were processed correctly. This became important after I
+added the UNCOVER_DIRS feature, because shell auto-completion puts a slash
+after the name of directories (eg, "UNCOVER_DIRS=/u(Tab)" results in
+"UNCOVER_DIRS=/usr/"). UNCOVER_DIRS should be even more more handy now.
+
+- Added the variable EXCEPTIONS and the function is_an_exception(). The
+motivation behind this is to allow mount/umount to handle their lock file
+correctly while libtrash is running and UNREMOVABLE_DIRS contains /etc.
+
+---------------------------
+
+Changes 1.2 -> 1.3 (2002/08/20)
+
+- Added an alternative cleanTrash script contributed by Martin Corley.
+
+---------------------------
+
+Changes 1.3 -> 1.4 (2002/10/13)
+
+- Fixed bug in DO_OPEN_SPECIFIC_PREPARATION() macro inside open-funs.c. 
+This bug, reported by Frederic Connes, was preventing files from retaining
+there current permission set when they were opened with open()/open64() in
+(O_CREAT | O_TRUNC) mode.
+
+- Changed name of configuration variables UNLINK_OFF, RENAME_OFF, FOPEN_OFF,
+FREOPEN_OFF and OPEN_OFF to the more intelligible INTERCEPT_UNLINK,
+INTERCEPT_RENAME, INTERCEPT_FOPEN, INTERCEPT_FREOPEN and INTERCEPT_OPEN,
+following Frederic Connes' suggestion.
+  
+
+----------------------------
+
+Changes 1.4 -> 1.5 (2002/11/06)
+
+- Fixed bug in readline() which was making libtrash stop reading the
+configuration file when it found a blank line. This bug was reported by Dan
+Stutzbach, who also provided me with a patch.
+
+- Fixed memory leak (cfg->uncovered_dirs wasn't being free()d) reported by
+Ryan Brown.
+
+
+-----------------------------
+
+Changes 1.5 -> 1.6 (2002/12/06)
+
+- Added USER_TEMPORARY_DIRS feature.
+
+-----------------------------
+
+Changes 1.6 -> 1.7 (2003/01/07)
+
+- Applied two patches contributed by Frederic Connes which (i) create a
+symlink from libtrash.so to libtrash.so.{VERSION} when 'make install' is run
+and (ii) fix a bug in the cleanTrash script.
+
+-----------------------------
+
+Changes 1.7 -> 1.8 (2003/02/04)
+
+- Following a suggestion from Paul Adams, libtrash now ignores files with a
+null byte count. This should prevent trash cans from filling up with
+worthless lock files.
+
+-----------------------------
+
+Changes 1.8 -> 1.9 (2003/02/26)
+
+- Fixed bug in the hidden_file() function, which was causing libtrash to
+enter an infinite loop when asked to remove a file with a name starting with
+multiple dots.
+
+-----------------------------
+
+Changes 1.9 -> 2.0 (2003/03/05)
+
+- Added the IGNORE_RE ("ignore regular expression") feature to libtrash. The
+code which implements it was contributed by Jacek Sliwerski (rzyjontko).
+
+-----------------------------
+
+Changes 2.0 -> 2.1 (2003/06/25)
+
+- Fixed a bug in the build_absolute_path() function, which made that
+function return an error code when passed a path to a file directly under
+the root of the file system. 
+
+-----------------------------
+
+Changes 2.1 -> 2.2 (2003/12/07)
+
+- Fixed a bug in the convert_relative_into_absolute_paths() function, which
+was calling strcat() instead of strcpy().
+ 
+- Included the strash script, kindly provided by Frederic Connes, in the
+cleanTrash directory.
+
+
+-----------------------------
+
+Changes 2.2 -> 2.3 (2004/11/07)
+
+- Fixed a bug which led libtrash to crash when functions were called with a
+NULL pointer as the pathname.
+
+
+-----------------------------
+
+Changes 2.3 -> 2.4 (2005/Sep/24)
+
+- Implemented a work-around necessary due to a undocumented "feature" of GNU
+libc, by which, if there are multiple symbols with the same name in a
+library, dlsym() returns a pointer to the *oldest* version of that function
+call. This was causing libtrash to invoke the old version of fopen() found
+in glibc; if the calling code then attempted to use a wide-char supporting
+function on the returned file pointer, GNU libc would crash. We now make
+sure that any file pointers we return are obtained from GNU libc's 2.1
+version of fopen(). (As of this time, 2.1 seems to be the highest version
+number listed in the table of symbols in glibc.)
+
+- Took this chance to "sprinkle" five additional calls to dlerror() *before*
+the calls to dlsym()/dlvsym(), as should be done to correctly detect
+dlsym()/dlvsym() errors (which is achieved by then calling dlerror() *after*
+calling those functions).
+
+-----------------------------
+
+Changes 2.4 -> 2.5 (2006/Oct/26)
+
+- Modified build_absolute_path() so that it becomes a useful wrapper around
+canonicalize_file_name(). I recently learned that this function does not
+handle paths to inexistent files at all; having a wrapper which can cope
+with that (although not useful in the context of libtrash) is something
+nice.
+
+-----------------------------
+
+Changes 2.5 -> 2.6 (2007/Feb/18)
+
+- Added support for unlinkat(), renameat(), openat() and openat64() function
+calls (featured in recent versions of GNU libc). Currently these functions
+are supported without ever actually invoking their "real" versions found in
+GNU libc. This defeats their very purpose (which, according to the man page,
+is to avoid race conditions by having parallel changes to the dir structure
+"above" the path these functions operate on sabotaging their functioning).
+This will be changed in a future version.
+
+- Added support for creat() and creat64().
+
+-----------------------------
+
+Changes 2.6 -> 2.7 (2007/May/4)
+
+- Jacek Sliwerski rewrote parts of the reformulate_new_path() function so
+that (i) it uses a faster logarithmic search and (ii) does not use the
+log10() function.
+
+
+-----------------------------
+
+Changes 2.7 -> 2.8 (2007/May/6)
+
+- Removed a call to log10() which became a unresolved symbol since we
+stopped linking against -lm.
+
+-----------------------------
+
+Changes 2.8 -> 2.9 (2007/Dec/2)
+
+- FOR PREVIOUS USERS OF LIBTRASH: since some recent distributions have
+started using /media as the top dir for removable media mount points, I 
+have updated the default value of REMOVABLE_MEDIA_MOUNT_POINTS to include
+it; if that doesn't suit you, edit your libtrash.conf file before
+compiling. 
+
+- Fixed premature free()ing of conf_file_path in read_config_from_file (only
+a problem when compiled in DEBUG mode).
+
+- Removed the fix introduced earlier which had us use dlvsym() when trying to get a
+pointer to the real fopen(), since its hard-coded request for version
+"GLIBC_2.1" of fopen no longer works on recent systems. (In *TWO* locations:
+init() and the macro GET_REAL_FUNCTION() inside open-funs.c.)
+
+- Added a simple test, fopen-wc-test, to the Makefile which asks users to
+notify me if it looks like the removal of that fix will break things for
+them (hopefully won't happen).
+
+- Moved the patch and warning concerning glibc 2.2.5 into a separate dir to
+avoid unnecessarily scaring/confusing users.
+
+- Added a check for the GNU libc fopen() not being available before using it
+inside read_config_from_file() and move().
+
+-----------------------------
+
+Changes 2.9 -> 3.0 (2007/Dec/3)
+
+- Fixed mistaken prototypes for the real_fopen, real_freopen and their
+64-bit counterparts function pointers (their return type was specified as
+int rather than FILE*)
+
+- Fixed wrong error return value of move() in a new test I added in the last
+version (was returning NULL rather than -1).
+
+- Changed the way we obtain the pointers to the "real" functions. Since
+removing the old dlvsym() fix (in v2.9) broke things for some users, we now
+compile a small test binary (linking-helper.c), run ldd on it and then
+inspect the output of running 'readelf -s' on the different libs listed by
+ldd. The result is that we now can specify a symbol version which we know is
+available in the user's system and therefore use dlvsym() in place of dlsym()
+(which, as was the original problem, for some functions -- notably, fopen() --
+returns an older version of the function rather than the version returned by
+the run-time linker).
+
+- Support for the "at functions" (unlinkat/renameat/openat/openat64) is now
+decided automatically by the get_symbol_versions.py script before compilation,
+rather than having the user specify AT_FUNCTIONS=YES/NO in libtrash.conf.
+
+- Added a compile time check for a functioning proc file system.
+
+-----------------------------
+
+Changes 3.0 -> 3.1 (2007/Dec/25)
+
+- Updated the get_symbol_versions.py so that the symbol version used
+for each wrapped GNU libc function is that identified with "@@" in the
+output of 'readelf -s [path to lib]'. (Following advice received on the
+binutils mailing list.)
+
+
+-----------------------------
+
+Changes 3.1 -> 3.2 (2008/Jan/23)
+
+- Added a check for a sufficiently recent version of Python to the
+get_symbol_versions.py configuration script. 
+
+-----------------------------
+
+Changes 3.2 -> 3.3 (2014/Jun/08)
+
+- Renamed _init/_fini functions to libtrash_init/libtrash_fini to
+avoid symbol clashes when loading audacious plugins. (Thanks to Kamil
+Dudka for sending me a patch.)
+
+
+-----------------------------
+
+Changes 3.3 -> 3.4 (2018/Mar/??)
+
+- Our build scripts now specify python2 is required to run
+get_symbol_versions.py
+
+- Fixed a bug in make_absolute_path_from_dirfd_relpath(), which
+previously took a file descriptor with value 0 as being invalid (only
+*negative* file descriptors are invalid).
+
+- is_empty_file() no longer tries to read a byte from a file to
+determine if it is empty; instead, it relies on the size information
+provided by stat(). This avoids needlessly moving to the trash can empty
+files merely because their permissions don't allow their owner to read
+them.
+
+- added support for the new O_TMPFILE flag accepted by
+open/openat/open64/openat64() functions. (Please note this *might*
+break compilation on really old systems that don't define this
+constant.) This flag allows programs to create a new file without
+explicitly setting the O_CREAT flag; because libtrash would only check
+for the latter as a sign that a call to one of the open() functions
+could lead to the creation of a new file (and thus data loss), more
+recent code using O_TMPFILE would lead to the correct file permission
+'mode' not being set by libtrash.
+

@@ -1,0 +1,27 @@
+cleanTrash is a very helpful Perl script kindly provided by Daniel Sadilek.
+Please take a look at the top of the script and modify any incorrect values
+in the section titled "CONFIGURATION".
+
+This script is meant to be run by root on a regular basis. It allows you to
+set a maximum trash can size (in kilo-bytes), and whenever a user's trash
+can exceeds that value the oldest files in that trash can will be
+permanently deleted. cleanTrash can be run while libtrash is active for the
+root account, even if it is configured in such a way that would normally
+prevent root from deleting files in the users' directories: cleanTrash
+bypasses libtrash when unlinking files from a user's trash can.
+
+It might be a good idea to run it from a cron job.
+
+The file ct2.pl contains an alternative implementation of cleanTrash, which
+was kindly contributed by Martin Corley. It is meant to "rely less on
+external processes, and use cleaner perl" (taken from the header of the
+file). There is also a "CONFIGURATION" section for you to edit, and when
+called it accepts one optional argument, "-Q", which makes ct2.pl operate
+quietly.
+
+A third alternative was recently written by Frederic Connes and is called
+strash. It doesn't require perl and you can find it in the strash-0.9.tar.gz
+tarball.
+
+
+- Manuel Arriaga
