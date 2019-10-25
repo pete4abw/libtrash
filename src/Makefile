@@ -5,7 +5,7 @@ INSTLIBDIR=/usr/local/lib
 SYSCONFFILE=/etc/libtrash.conf
 
 MAJOR =3
-VERSION =3.4
+VERSION =3.5
 
 all: libtrash
 

@@ -102,7 +102,8 @@ typedef struct
    char *absolute_trash_can;
    char *absolute_trash_system_root;
    char *home;
-   
+   /* check for max file size. 0 means don't check */
+   unsigned long max_file_size;
 }
 config;
 

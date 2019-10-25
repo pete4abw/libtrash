@@ -478,3 +478,10 @@ could lead to the creation of a new file (and thus data loss), more
 recent code using O_TMPFILE would lead to the correct file permission
 'mode' not being set by libtrash.
 
+Change 3.4 -> 3.5 (2019/Oct)
+
+- Add new parameter for MAX_FILE_SIZE.
+- Files greater than ##M or ##G will not be deleted. This is to
+protect against overflowing a user's home directory space or to
+avoid lengthy byte-moves between different file systemss.
+

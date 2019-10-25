@@ -329,7 +329,8 @@ void libtrash_init(config *cfg)
 	   "LIBTRASH_CONFIG_FILE_UNREMOVABLE:  %d\n"
 	   "REMOVABLE_MEDIA_MOUNT_POINTS:      %s\n"
 	   "EXCEPTIONS:                        %s\n"
-	   "IGNORE_RE:                         %s\n\n",
+	   "IGNORE_RE:                         %s\n"
+	   "MAX_FILE_SIZE:                     %ld\n\n",
 	   cfg->relative_trash_can, cfg->in_case_of_failure, cfg->should_warn, cfg->ignore_hidden,
 	   cfg->ignore_editor_backup, cfg->ignore_editor_temporary, cfg->protect_trash, cfg->global_protection,
 	   cfg->relative_trash_system_root, cfg->temporary_dirs, cfg->user_temporary_dirs, cfg->unremovable_dirs,
@@ -338,7 +339,8 @@ void libtrash_init(config *cfg)
 	   cfg->libtrash_config_file_unremovable,
 	   cfg->removable_media_mount_points,
 	   cfg->exceptions,
-	   cfg->ignore_re);
+	   cfg->ignore_re,
+	   cfg->max_file_size);
 #endif
 
    /* ------------------------------------------------------ */

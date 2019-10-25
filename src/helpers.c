@@ -56,6 +56,8 @@ static int is_an_exception(const char *path, const char *exceptions);
 
 static int is_empty_file(const char *path);
 
+static int is_max_file_size(const char *path, unsigned long max_file_size);
+
 static int matches_re(const char *path, const char *regexp);
 
 /* Definition of helper functions: */
@@ -1379,7 +1381,8 @@ static char * readline(FILE *stream, int *errors)
 
 /* These macros are used by the function get_config_from_file(): */
 
-#define NUMBER_OF_CONFIG_OPTIONS 22 /* number of options listed below in the call to read_config_from_file().*/
+#define NUMBER_OF_CONFIG_OPTIONS 23 /* number of options listed below in the call to read_config_from_file().
+				    * increased by 1 for MAX_FILE_SIZE exclusion test */
 
 /* ---------------------------- */
 
@@ -1430,7 +1433,8 @@ void get_config_from_file(config *cfg)
 					 "REMOVABLE_MEDIA_MOUNT_POINTS",
 					 "IGNORE_EDITOR_TEMPORARY",
 					 "EXCEPTIONS",
-					 "IGNORE_RE");
+					 "IGNORE_RE",
+					 "MAX_FILE_SIZE"); /* MAX filesize test */
    
    /* Did read_config_from_file() fail? If it did, we quit and leave the compile-time defaults unchanged: */
    
@@ -1556,7 +1560,24 @@ void get_config_from_file(config *cfg)
    
    if (config_values[21])
      cfg->ignore_re = config_values[21];
-   
+
+   /* check if max file size is specified and convert to unsigned long */
+   cfg->max_file_size = 0; /* special case to ignore */
+
+   if (config_values[22])
+   {
+	   int len_of_string = strlen(config_values[22]);
+	   char m_or_g = config_values[22][len_of_string-1];
+	   config_values[22][len_of_string-1] = '\0';
+	   if ( m_or_g == 'M' || m_or_g == 'm' )
+		   cfg->max_file_size = atol(config_values[22]) * 1048576UL;
+	   else if ( m_or_g == 'G' || m_or_g == 'g' )
+		   cfg->max_file_size = atol(config_values[22]) * 1073741824UL;
+	   else
+		   fprintf(stderr,"libtrash warning: INVALID MAX_FILE_SIZE setting: %s%c. Ignored.\n",
+			config_values[22],m_or_g);
+   }
+
    /* Done. */
    
    /* We no longer need the config_values array, since we already copied/used
@@ -1616,6 +1637,11 @@ int decide_action(const char *absolute_path, config *cfg)
     * of absolute_path which _follows_ the name of the home directory and the slash which separates it from the file name.
     */
    
+   /* Tell the caller not to remove large files. Use TRASH_OFF=YES to override */
+
+   if (! is_max_file_size(absolute_path, cfg->max_file_size))       			/* file is bigger than max file size limit */
+	return BE_LEFT_UNTOUCHED;							/* can't move to Trash                     */
+
    /* Tell the caller to remove (without saving) the following kinds of files: */
    
    if ( (cfg->ignore_hidden && hidden_file(absolute_path)) ||                           /* is a hidden file and we were told
@@ -1642,7 +1668,8 @@ int decide_action(const char *absolute_path, config *cfg)
 	
 	found_under_dir(absolute_path, cfg->removable_media_mount_points)       ||      /* file is on a removable medium */
 	
-	is_empty_file(absolute_path)                                             )       /* zero byte-count in regular file */
+	is_empty_file(absolute_path))                                            	/* zero byte-count in regular file */
+
      
      return BE_REMOVED;
    
@@ -2019,6 +2046,32 @@ static int is_empty_file(const char *path)
    else
      return 1;
 
+}
+
+/* This function will test the file size against the MAX_FILE_SIZE
+ * configuration setting. Will return 0 if too large or some error.
+ * Will return 1 if file is smaller than MAX_FILE_SIZE or
+ * cfg->max_file_size == 0 */
+
+static int is_max_file_size(const char *path, unsigned long max_file_size)
+{
+   struct stat file_stat;
+   int retval;
+
+   retval = lstat(path, &file_stat);
+
+#ifdef DEBUG
+   fprintf(stderr, "Return value: %d, errno: %d, File Stat Size: %ld, Max File Size: %ld\n",
+		   retval, errno, file_stat.st_size, max_file_size);
+#endif
+
+   if (retval == -1) /* some error */
+        return 0;
+
+   if ((file_stat.st_size >= max_file_size) && max_file_size != 0) /* file too large, ignore */
+	return 0;
+   else
+	return 1;
 }
 
 /* The following two user-contributed functions implement support for the IGNORE_RE

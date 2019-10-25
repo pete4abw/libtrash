@@ -10,9 +10,11 @@ Licensed under the GNU General Public License version 2. See the file COPYING fo
 details.
 
 
-Version: 3.4 (2018/Mar/18)
+Version: 3.5 (2019/Oct)
 -------
 
+NEW FEATURE: Prevent files >= ##M or ##G from moving to Trash.
+Override using TRASH_OFF=YES.
 
 IMPORTANT NOTE regarding Firefox and Google Chrome:
 --------------------------------------------------
