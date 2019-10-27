@@ -1637,11 +1637,6 @@ int decide_action(const char *absolute_path, config *cfg)
     * of absolute_path which _follows_ the name of the home directory and the slash which separates it from the file name.
     */
    
-   /* Tell the caller not to remove large files. Use TRASH_OFF=YES to override */
-
-   if (! is_max_file_size(absolute_path, cfg->max_file_size))       			/* file is bigger than max file size limit */
-	return BE_LEFT_UNTOUCHED;							/* can't move to Trash                     */
-
    /* Tell the caller to remove (without saving) the following kinds of files: */
    
    if ( (cfg->ignore_hidden && hidden_file(absolute_path)) ||                           /* is a hidden file and we were told
@@ -1673,6 +1668,11 @@ int decide_action(const char *absolute_path, config *cfg)
      
      return BE_REMOVED;
    
+   /* Tell the caller not to remove large files. Use TRASH_OFF=YES to override */
+
+   if (! is_max_file_size(absolute_path, cfg->max_file_size))       			/* file is bigger than max file size limit */
+	return BE_LEFT_UNTOUCHED;							/* can't move to Trash, return an error    */
+
    /* If the file doesn't fall into any of these categories, it means that it is a file which the user wants to
     save a copy of rather than permanently destroying it; it is up to the caller to determine whether this file
     resides in or outside of the user's home directory and act accordingly: */
