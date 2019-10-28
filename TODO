@@ -38,10 +38,3 @@ so... :-)
 libtrash is disabled. This was suggested by Frederic Connes and it would be
 useful, eg, for daemons.
 
-- Allow a maximum file size limit to be defined for "global protection"
-operations. That way the user would be able to tell libtrash to ignore (ie,
-really delete) files which reside on a partition different from the one in
-which her home dir is located if she fears that copying that file would be
-too slow. This was suggested by Raik Lieske, and would be a a nice thing to
-have until libtrash gets partition-specific trash cans.
-
