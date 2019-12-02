@@ -56,7 +56,7 @@ static int is_an_exception(const char *path, const char *exceptions);
 
 static int is_empty_file(const char *path);
 
-static int is_max_file_size(const char *path, unsigned long max_file_size);
+static int is_above_max_file_size(const char *path, unsigned long max_file_size);
 
 static int matches_re(const char *path, const char *regexp);
 
@@ -1562,20 +1562,32 @@ void get_config_from_file(config *cfg)
      cfg->ignore_re = config_values[21];
 
    /* check if max file size is specified and convert to unsigned long */
-   cfg->max_file_size = 0; /* special case to ignore */
+   cfg->max_file_size = 0;
 
    if (config_values[22])
    {
+	   long max_file_size = 0; /* use signed long to trap a negative value in conf file */
 	   int len_of_string = strlen(config_values[22]);
 	   char m_or_g = config_values[22][len_of_string-1];
 	   config_values[22][len_of_string-1] = '\0';
+	   errno = 0;
 	   if ( m_or_g == 'M' || m_or_g == 'm' )
-		   cfg->max_file_size = atol(config_values[22]) * 1048576UL;
+	   {
+		   max_file_size = strtol(config_values[22], NULL, 10);
+		   max_file_size *= 1048576UL;
+	   }
 	   else if ( m_or_g == 'G' || m_or_g == 'g' )
-		   cfg->max_file_size = atol(config_values[22]) * 1073741824UL;
-	   else
+	   {
+		   max_file_size = strtol(config_values[22], NULL, 10);
+		   max_file_size *= 1073741824UL;
+	   }
+
+	   /* check if max file size is valid */
+	   if (max_file_size <= 0 || errno == ERANGE || errno == EINVAL)
 		   fprintf(stderr,"libtrash warning: INVALID MAX_FILE_SIZE setting: %s%c. Ignored.\n",
 			config_values[22],m_or_g);
+	   else
+		   cfg->max_file_size = (unsigned long) max_file_size; /* set max file size */
    }
 
    /* Done. */
@@ -1670,8 +1682,8 @@ int decide_action(const char *absolute_path, config *cfg)
    
    /* Tell the caller not to remove large files. Use TRASH_OFF=YES to override */
 
-   if (! is_max_file_size(absolute_path, cfg->max_file_size))       			/* file is bigger than max file size limit */
-	return BE_LEFT_UNTOUCHED;							/* can't move to Trash, return an error    */
+   if (is_above_max_file_size(absolute_path, cfg->max_file_size))       		/* file is bigger than the max file size limit and user */
+	return BE_LEFT_UNTOUCHED;							/* wants us to refuse to move to it to the trash and return an error    */
 
    /* If the file doesn't fall into any of these categories, it means that it is a file which the user wants to
     save a copy of rather than permanently destroying it; it is up to the caller to determine whether this file
@@ -2049,29 +2061,33 @@ static int is_empty_file(const char *path)
 }
 
 /* This function will test the file size against the MAX_FILE_SIZE
- * configuration setting. Will return 0 if too large or some error.
- * Will return 1 if file is smaller than MAX_FILE_SIZE or
- * cfg->max_file_size == 0 */
+ * configuration setting. Will return 1 if MAX_FILE_SIZE was defined
+ * by the user and (either the file exceeds that limit or an error occurs).
+ * Returns 0 otherwise (i.e.: either MAX_FILE_SIZE was not defined or
+ * we succeeded in determining that the file is smaller than that limit).
+ */
 
-static int is_max_file_size(const char *path, unsigned long max_file_size)
+static int is_above_max_file_size(const char *path, unsigned long max_file_size)
 {
    struct stat file_stat;
    int retval;
+
+   if (max_file_size == 0) // MAX_FILE_SIZE feature is not in use, leave immediately (no need to do lstat() call)
+     return 0;
+
+   /* Let us get the size of this file and see if it exceeds the limit defined by the user: */
 
    retval = lstat(path, &file_stat);
 
 #ifdef DEBUG
    fprintf(stderr, "Return value: %d, errno: %d, File Stat Size: %ld, Max File Size: %ld\n",
-		   retval, errno, file_stat.st_size, max_file_size);
+	   retval, errno, file_stat.st_size, max_file_size);
 #endif
 
-   if (retval == -1) /* some error */
-        return 0;
-
-   if ((file_stat.st_size >= max_file_size) && max_file_size != 0) /* file too large, ignore */
-	return 0;
-   else
-	return 1;
+   if (retval == -1 || file_stat.st_size >= max_file_size) /* lstat() call failed OR file is too large => we won't remove this file */
+     return 1;
+   else /* lstat() call succeeded and we have established this file is below the MAX_FILE_SIZE defined by the user */
+     return 0;
 }
 
 /* The following two user-contributed functions implement support for the IGNORE_RE
