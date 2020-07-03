@@ -234,7 +234,7 @@ void libtrash_init(config *cfg)
 	return;
      }
 
-   /* Has the user asked us to become temporarily inactive by setting the environmental variable TRASH_OFF to
+   /* Has the user asked us to become temporarily inactive by setting the environment variable TRASH_OFF to
     YES? */
 
    tmp = getenv("TRASH_OFF");
@@ -330,7 +330,7 @@ void libtrash_init(config *cfg)
 	   "REMOVABLE_MEDIA_MOUNT_POINTS:      %s\n"
 	   "EXCEPTIONS:                        %s\n"
 	   "IGNORE_RE:                         %s\n"
-	   "MAX_FILE_SIZE:                     %ld\n\n",
+	   "PRESERVE_FILES_LARGER_THAN:        %llu\n\n",
 	   cfg->relative_trash_can, cfg->in_case_of_failure, cfg->should_warn, cfg->ignore_hidden,
 	   cfg->ignore_editor_backup, cfg->ignore_editor_temporary, cfg->protect_trash, cfg->global_protection,
 	   cfg->relative_trash_system_root, cfg->temporary_dirs, cfg->user_temporary_dirs, cfg->unremovable_dirs,
@@ -340,7 +340,7 @@ void libtrash_init(config *cfg)
 	   cfg->removable_media_mount_points,
 	   cfg->exceptions,
 	   cfg->ignore_re,
-	   cfg->max_file_size);
+	   cfg->preserve_files_larger_than_limit);
 #endif
 
    /* ------------------------------------------------------ */

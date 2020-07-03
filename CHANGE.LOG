@@ -39,7 +39,7 @@ slash in abs_path.
 - Reorganized code, dividing it into three separate files, and performed
 necessary changes to the scope of some variables.
 
-- Now libtrash is disabled by setting an environmental variable, TRASH_OFF,
+- Now libtrash is disabled by setting an environment variable, TRASH_OFF,
 to YES. This allows us to offer the user the option to have libtrash, when
 disabled, recall her, after a program exits, that it isn't running and that
 it might be a good idea to re-enable it. 
@@ -478,10 +478,11 @@ could lead to the creation of a new file (and thus data loss), more
 recent code using O_TMPFILE would lead to the correct file permission
 'mode' not being set by libtrash.
 
-Change 3.4 -> 3.5 (2019/Oct)
+Change 3.4 -> 3.5 (2020/May)
 
-- Add new parameter for MAX_FILE_SIZE.
-- Files greater than ##M or ##G will not be deleted. This is to
-protect against overflowing a user's home directory space or to
-avoid lengthy byte-moves between different file systemss.
+- Add new configuration parameter PRESERVE_FILES_LARGER_THAN. Files
+larger than this limit will not be removed while libtrash is running.
+This parameter can only be set in the run-time libtrash configuration
+file in your home directory. (Thanks to Peter Hyman for sending me a
+patch.)
 

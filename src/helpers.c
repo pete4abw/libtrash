@@ -56,7 +56,7 @@ static int is_an_exception(const char *path, const char *exceptions);
 
 static int is_empty_file(const char *path);
 
-static int is_above_max_file_size(const char *path, unsigned long max_file_size);
+static int file_is_too_large(const char *path, unsigned long long preserve_files_larger_than_limit);
 
 static int matches_re(const char *path, const char *regexp);
 
@@ -1381,8 +1381,7 @@ static char * readline(FILE *stream, int *errors)
 
 /* These macros are used by the function get_config_from_file(): */
 
-#define NUMBER_OF_CONFIG_OPTIONS 23 /* number of options listed below in the call to read_config_from_file().
-				    * increased by 1 for MAX_FILE_SIZE exclusion test */
+#define NUMBER_OF_CONFIG_OPTIONS 23 /* number of options listed below in the call to read_config_from_file(). */
 
 /* ---------------------------- */
 
@@ -1434,7 +1433,7 @@ void get_config_from_file(config *cfg)
 					 "IGNORE_EDITOR_TEMPORARY",
 					 "EXCEPTIONS",
 					 "IGNORE_RE",
-					 "MAX_FILE_SIZE"); /* MAX filesize test */
+					 "PRESERVE_FILES_LARGER_THAN");
    
    /* Did read_config_from_file() fail? If it did, we quit and leave the compile-time defaults unchanged: */
    
@@ -1560,36 +1559,71 @@ void get_config_from_file(config *cfg)
    
    if (config_values[21])
      cfg->ignore_re = config_values[21];
-
-   /* check if max file size is specified and convert to unsigned long */
-   cfg->max_file_size = 0;
-
+   
+   /* check if PRESERVE_FILES_LARGER_THAN is specified and convert to unsigned long long */
+   
+   cfg->preserve_files_larger_than_limit = 0; // unless we can successfully read and convert a different value (below), this will default to 0 (which means no max file size)
+   
    if (config_values[22])
-   {
-	   long max_file_size = 0; /* use signed long to trap a negative value in conf file */
-	   int len_of_string = strlen(config_values[22]);
-	   char m_or_g = config_values[22][len_of_string-1];
-	   config_values[22][len_of_string-1] = '\0';
-	   errno = 0;
-	   if ( m_or_g == 'M' || m_or_g == 'm' )
-	   {
-		   max_file_size = strtol(config_values[22], NULL, 10);
-		   max_file_size *= 1048576UL;
-	   }
-	   else if ( m_or_g == 'G' || m_or_g == 'g' )
-	   {
-		   max_file_size = strtol(config_values[22], NULL, 10);
-		   max_file_size *= 1073741824UL;
-	   }
-
-	   /* check if max file size is valid */
-	   if (max_file_size <= 0 || errno == ERANGE || errno == EINVAL)
-		   fprintf(stderr,"libtrash warning: INVALID MAX_FILE_SIZE setting: %s%c. Ignored.\n",
-			config_values[22],m_or_g);
-	   else
-		   cfg->max_file_size = (unsigned long) max_file_size; /* set max file size */
-   }
-
+     {
+	unsigned long long preserve_files_larger_than_limit = 0;
+	
+	int len_of_string = strlen(config_values[22]);
+	
+	if (len_of_string >= 1 && config_values[22][0] != '-') // make sure user didn't screw up and entered a negative number (plus ensure len_of_string >= 1 makes it safe to access [len_of_string-1] below)
+	  {
+	     char m_or_g = config_values[22][len_of_string-1]; // remember the megabyte or gigabyte suffix
+	     
+	     if ( m_or_g == 'M' || m_or_g == 'm' ||  m_or_g == 'G' || m_or_g == 'g') // has a valid suffix
+	       {
+		  config_values[22][len_of_string-1] = '\0'; // chop off the suffix
+		  char* end; /* used for strtoll to signal whether the whole string was converted */
+		  
+		  errno = 0; // required for us to be able to properly check whether strtoll succeeded
+		  
+		  preserve_files_larger_than_limit = strtoll(config_values[22], &end, 10);
+		  
+		  if (errno == 0 && *end == '\0') // strtoll() is happy with the string we passed it (meaning: it was a valid long long)
+		    {
+		       if ( m_or_g == 'M' || m_or_g == 'm' )
+			 {
+			    preserve_files_larger_than_limit *= 1048576L;
+			 }
+		       else // means that ( m_or_g == 'G' || m_or_g == 'g' ), since we already performed test that it is one of (M,m,G,g) above
+			 {
+			    preserve_files_larger_than_limit *= 1073741824L;
+			 }
+		       
+		       // success!
+		       cfg->preserve_files_larger_than_limit = (unsigned long long) preserve_files_larger_than_limit; /* set max file size */
+		    }
+		  else // something went wrong
+		    {
+#ifdef DEBUG
+		       fprintf(stderr,"libtrash warning: Invalid PRESERVE_FILES_LARGER_THAN setting in libtrash.conf: %s%c. Ignored.\n",
+			       config_values[22],m_or_g);		     
+#endif
+		       ;
+		    }
+		  
+	       }
+	     else // invalid suffix (something other than (M,m,G,g) )
+	       {
+#ifdef DEBUG
+		  fprintf(stderr,"libtrash warning: Invalid suffix used for PRESERVE_FILES_LARGER_THAN setting in libtrash.conf. Ignored.\n");
+#endif
+		  ;
+	       }
+	  }
+	else // negative value provided by the user or an empty string (latter shouldn't happen given how read_config_from_file works, but...!)
+	  {
+#ifdef DEBUG
+	     fprintf(stderr,"libtrash warning: Negative or empty value for PRESERVE_FILES_LARGER_THAN setting in libtrash.conf. Ignored.\n");
+#endif
+	     ;
+	  }
+     }
+   
    /* Done. */
    
    /* We no longer need the config_values array, since we already copied/used
@@ -1682,7 +1716,7 @@ int decide_action(const char *absolute_path, config *cfg)
    
    /* Tell the caller not to remove large files. Use TRASH_OFF=YES to override */
 
-   if (is_above_max_file_size(absolute_path, cfg->max_file_size))       		/* file is bigger than the max file size limit and user */
+   if (file_is_too_large(absolute_path, cfg->preserve_files_larger_than_limit))       		/* file is bigger than the max file size limit and user */
 	return BE_LEFT_UNTOUCHED;							/* wants us to refuse to move to it to the trash and return an error    */
 
    /* If the file doesn't fall into any of these categories, it means that it is a file which the user wants to
@@ -2060,33 +2094,33 @@ static int is_empty_file(const char *path)
 
 }
 
-/* This function will test the file size against the MAX_FILE_SIZE
- * configuration setting. Will return 1 if MAX_FILE_SIZE was defined
+/* This function will test the file size against the PRESERVE_FILES_LARGER_THAN
+ * configuration setting. Will return 1 if PRESERVE_FILES_LARGER_THAN was defined
  * by the user and (either the file exceeds that limit or an error occurs).
- * Returns 0 otherwise (i.e.: either MAX_FILE_SIZE was not defined or
+ * Returns 0 otherwise (i.e.: either PRESERVE_FILES_LARGER_THAN was not defined or
  * we succeeded in determining that the file is smaller than that limit).
  */
 
-static int is_above_max_file_size(const char *path, unsigned long max_file_size)
+static int file_is_too_large(const char *path, unsigned long long preserve_files_larger_than_limit)
 {
    struct stat file_stat;
    int retval;
-
-   if (max_file_size == 0) // MAX_FILE_SIZE feature is not in use, leave immediately (no need to do lstat() call)
+   
+   if (preserve_files_larger_than_limit == 0) // PRESERVE_FILES_LARGER_THAN feature is not in use, leave immediately (no need to do lstat() call)
      return 0;
-
+	
    /* Let us get the size of this file and see if it exceeds the limit defined by the user: */
-
+   
    retval = lstat(path, &file_stat);
 
 #ifdef DEBUG
-   fprintf(stderr, "Return value: %d, errno: %d, File Stat Size: %ld, Max File Size: %ld\n",
-	   retval, errno, file_stat.st_size, max_file_size);
+   fprintf(stderr, "Return value: %d, errno: %d, File Stat Size: %llu, Max File Size: %llu\n",
+	   retval, errno, file_stat.st_size, preserve_files_larger_than_limit);
 #endif
-
-   if (retval == -1 || file_stat.st_size >= max_file_size) /* lstat() call failed OR file is too large => we won't remove this file */
+	
+   if (retval == -1 || file_stat.st_size >= preserve_files_larger_than_limit) /* lstat() call failed OR file is too large => we won't remove this file */
      return 1;
-   else /* lstat() call succeeded and we have established this file is below the MAX_FILE_SIZE defined by the user */
+   else /* lstat() call succeeded and we have established this file is below the PRESERVE_FILES_LARGER_THAN defined by the user */
      return 0;
 }
 

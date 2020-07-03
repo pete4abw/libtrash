@@ -191,7 +191,7 @@ int rename(const char *oldpath, const char *newpath)
     * check with the _effective_ UID rather than the real one, so that
     * SETUID programs work correctly (of course, we are assuming that the
     * program already did the appropriate permission checks -that's its
-    * responsability). */
+    * responsibility). */
    
    if (!can_write_to_dir(oldpath))
      {
