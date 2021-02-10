@@ -1,0 +1,196 @@
+.\"
+.\" strash.8
+.\"
+.\" strash strips files from libtrash trash cans.
+.\"
+.\" Copyright (C) Frederic Connes 2003
+.\"
+.\" This program is free software; you can redistribute it and/or modify
+.\" it under the terms of the GNU General Public License as published by
+.\" the Free Software Foundation; either version 2 of the license, or
+.\" (at your option) any later version.
+.\"
+.\" This program is distributed in the hope that it will be useful,
+.\" but WITHOUT ANY WARRANTY; without even the implied warranty of
+.\" MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+.\" GNU General Public License for more details.
+.\"
+.\" You should have received a copy of the GNU General Public License
+.\" along with this program; if not, write to the Free Software
+.\" Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307, USA.
+.\"
+
+.TH STRASH 8 "November 2003" "Version 0.9"
+.na
+.nf
+.Rs
+..
+.SH NAME
+strash \- strip files from libtrash trash cans
+
+.SH SYNOPSIS
+\fBstrash\fR LIMIT [OPTION]...
+
+.SH DESCRIPTION
+\fBstrash\fR is a Bourne shell script for use with libtrash by Manuel Arriaga
+(http://www.m-arriaga.net/software/libtrash/).
+
+It will enforce age, number or size limits on libtrash trash cans so they
+won't eventually fill your storage space.
+
+It is meant to be run by root on a regular basis.
+
+.SH LIMIT
+In the following parameters, files exactly matching <limit> are excluded and
+won't be removed.
+
+.IP "\fB--age\fR <limit>\fB, -A\fR <limit>"
+Restrict the age of files to <limit>.
+
+A time unit can be specified, the default being seconds:
+  \fBs\fR: seconds
+  \fBm\fR: minutes
+  \fBh\fR: hours
+  \fBd\fR: days
+  \fBM\fR: months
+  \fBY\fR: years
+
+.IP "\fB--filesize\fR <limit>\fB, -F\fR <limit>"
+Restrict the size of files to <limit>. By default, the biggest files are
+removed first.
+
+A size unit can be specified, the default being bytes:
+  \fBb\fR: bytes
+  \fBk\fR: kilobytes
+  \fBM\fR: megabytes
+  \fBG\fR: gigabytes
+
+.IP "\fB--number\fR <limit>\fB, -N\fR <limit>"
+Restrict the number of files in trash cans to <limit>.
+
+.IP "\fB--size\fR <limit>\fB, -S\fR <limit>"
+Restrict the size of trash cans to <limit>.
+
+A size unit can be specified, the default being bytes.
+  \fBb\fR: bytes
+  \fBk\fR: kilobytes
+  \fBM\fR: megabytes
+  \fBG\fR: gigabytes
+
+.SH FILE SORTING OPTIONS
+
+By default, files are removed in the same order in which they were added to the
+trash can. \fBstrash\fR uses a history file located in each user's home
+directory to achieve that.  This behavior can be changed with the following
+options.
+
+.IP "\fB--sort=biggest, -b\fR"
+Remove the biggest files first.
+
+.IP "\fB--sort=smallest, -s\fR"
+Remove the smallest files first.
+
+.IP "\fB--sort=oldest, -o\fR"
+Remove the oldest files first.
+By default, the last modification time is used to sort the files.
+
+.IP "\fB--time=atime, --time=access, --time=use, -a\fR"
+When removing the oldest files first, use the last access time to sort the
+files.
+
+.IP "\fB--time=ctime, --time=status, -c\fR"
+When removing the oldest files first, use the last status change time to sort
+the files.
+
+.SH GENERAL OPTIONS
+
+.IP "\fB--du, -d\fR"
+Use \fBdu\fR to compute the trash can size.
+
+By default, the trash can size is the sum of all file sizes. If you run
+\fBdu\fR on a trash directory, it may report a size bigger than the limit you
+specified, because it rounds sizes up and adds directory sizes.
+If you want \fBdu\fR to report that the limit is not exceeded, use this option.
+This may significantly slow down \fBstrash\fR.
+
+.IP "\fB--print, -p\fR"
+Print the name of the files that should be removed. Do not remove them.
+
+.IP "\fB--si, -H\fR"
+Use the official SI units, with powers of 1000 instead of 1024.
+
+.IP "\fB--user\fR <user>\fB, -u\fR <user>"
+Strip <user>'s trash can.
+
+This option can be specified more than once.
+If it is not specified, \fBstrash\fR strips all trash cans.
+
+.SH VERBOSITY OPTIONS
+
+.IP "\fB--quiet, -q\fR"
+Do not output anything (except the name of the files that should be removed if
+\fB--print\fR is specified).
+
+.IP "\fB--verbose, -v\fR"
+Be verbose.
+
+.SH GNU STANDARD OPTIONS
+
+.IP "\fB--help, -h\fR"
+Print a usage message on standard output and exit successfully.
+
+.IP "\fB--version, -V\fR"
+Print version information on standard output, then exit successfully.
+
+.IP "\fB--\fR"
+Terminate option list.
+
+.SH EXAMPLES
+To remove files deleted over one month ago:
+.RS
+.B strash --age 1M
+.RE
+
+To remove all zero files:
+.RS
+.B strash --filesize 1 --sort=smallest
+.RE
+
+To restrict the number of files in trash cans to 10000, removing files with
+oldest access time first:
+.RS
+.B strash --number 10000 --sort=oldest --time=atime
+.RE
+
+To restrict john's trash can size to 64,000,000 bytes:
+.RS
+.B strash --size 64M --si --user john
+.RE
+
+To restrict trash can sizes to 64MB, as shown by \fBdu\fR:
+.RS
+.B strash --size 64M --du
+
+.SH FILES
+.TP
+.B /etc/libtrash.conf
+.RS
+Libtrash configuration file.
+.RE
+.TP
+.B $HOME/.strash
+.RS
+History file for each user.
+
+.SH BUGS
+Please report bugs to <strash@connes.org>.
+
+.SH AUTHOR
+Written by Frederic Connes <fred@connes.org>.
+
+.SH COPYRIGHT
+Copyright (C) 2003 Frederic Connes.
+
+This is free software; see the source for copying conditions. There is NO
+warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE,
+to the extent permitted by law.

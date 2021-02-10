@@ -1,0 +1,572 @@
+#!/bin/sh
+#
+# strash
+#
+# This Bourne shell script strips files from libtrash trash cans.
+#
+# Copyright (C) 2003 Frederic Connes <fred@connes.org>.
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307, USA.
+#
+# For more information about these matters, see the file named COPYING.
+#
+
+
+#------------------------------------------------------------------------------
+#
+# Configuration.
+#
+
+# Libtrash configuration file.
+conf_file="/etc/libtrash.conf"
+
+# Users' history file, relative to home directories.
+history_file=".strash"
+
+# Temporary directory.
+tmp_dir="/tmp"
+
+
+#------------------------------------------------------------------------------
+#
+# Usage, help and version.
+#
+
+synopsis () {
+  echo "Usage: strash LIMIT [OPTION]..."
+}
+
+usage () {
+  synopsis >&2
+  echo "Try \`strash --help' for more information." >&2
+  out 1
+}
+
+
+help () {
+  synopsis
+  cat <<EOF
+Strip files from libtrash trash cans.
+
+LIMIT
+-----
+--age <limit>, -A <limit>       Restrict the age of files to <limit>.
+--filesize <limit>, -F <limit>  Restrict the size of files to <limit>.
+--number <limit>, -N <number>   Restrict the number of files in trash cans to
+                                <limit>.
+--size <limit>, -S <limit>      Restrict the size of trash cans to <limit>.
+
+FILES SORTING OPTIONS
+---------------------
+--sort=biggest, -b              Remove the biggest files first.
+--sort=smallest, -s             Remove the smallest files first.
+--sort=oldest, -o               Remove the oldest files first.
+--time=atime, -a                Use the last access time to sort the files.
+--time=ctime, -c                Use the last status change time to sort the
+                                files.
+
+GENERAL OPTIONS
+---------------
+--du, -d                        Use du to compute the trash can size.
+--print, -p                     Print the name of the files that should be
+                                removed. Do not remove them.
+--si, -H                        Use the official SI units.
+--user <user>, -u <user>        Strip <user>'s trash can.
+
+VERBOSITY OPTIONS
+-----------------
+--quiet, -q                     Do not output anything.
+--verbose, -v                   Be verbose.
+
+GNU STANDARD OPTIONS
+--------------------
+--help, -h                      Print this usage message.
+--version, -V                   Print version information.
+--                              Terminate option list.
+
+Report bugs to <strash@connes.org>.
+EOF
+  out 0
+}
+
+version () {
+  cat <<EOF
+strash 0.9
+
+Copyright (C) 2003 Frederic Connes.
+
+This is free software; see the source for copying conditions. There is NO
+warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE,
+to the extent permitted by law.
+
+EOF
+  out 0
+}
+
+
+#------------------------------------------------------------------------------
+#
+# Main function.
+#
+
+strip_trash () {
+  print "stripping $user_home/$trash_can..."
+
+  # Sort the files.
+  sort_$sort
+
+  # Remove the files.
+  if [ $remove -eq 0 ] ; then
+    verb "Files that should be deleted:"
+  fi
+  remove_$maxtype$method
+
+  # Remove empty directories.
+  remove_empty_dirs
+}
+
+
+#------------------------------------------------------------------------------
+#
+# Files sorting.
+#
+
+sort_oldest () {
+  create_list | sort -g > "$tmp_file"
+}
+
+
+sort_history () {
+  local history_path size
+
+  history_path="$user_home/$history_file"
+
+  # Make sure the history directory exists.
+  mkdir -p `dirname "$history_path"`
+
+  # Sort the files.
+  size=0`du "$history_path" 2> /dev/null | cut -f 1`
+  if [ $size -eq 0 ] ; then
+    verb "creating history file..."
+    sort_oldest
+  else
+    verb "updating history file..."
+    create_list | sort -k 3 > "$tmp_history"
+    exec 3< "$tmp_history"
+    create_history "$history_path" | sort -g > "$tmp_file"
+    exec 3<&-
+    rm -f "$tmp_history"
+  fi
+
+  # Update the history file.
+  signals uninterruptible
+  cp "$tmp_file" "$history_path"
+  signals interruptible
+}
+
+
+sort_biggest () {
+  create_list | sort -g -r -k 2 > "$tmp_file"
+}
+
+
+sort_smallest () {
+  create_list | sort -g -k 2 > "$tmp_file"
+}
+
+
+create_list () {
+  find . -type f -printf "%${time}@ %s %p\n" 2> /dev/null
+}
+
+
+create_history ()
+{
+  local old_date old_size old_path new_date new_size new_path
+
+  read new_date new_size new_path 0<&3 || return
+  cat "$1" | sort -k 3 | {
+    read old_date old_size old_path
+    while : ; do
+      if [ "$old_path" = "$new_path" ] ; then
+        echo "$old_date $new_size $old_path"
+        read new_date new_size new_path 0<&3 || break
+        read old_date old_size old_path
+      else
+        { echo "$old_path" ; echo "$new_path" ; } | sort -c 2> /dev/null
+        if [ $? -eq 0 -a "$old_path" ] ; then
+          read old_date old_size old_path
+        else
+          echo "$new_date $new_size $new_path"
+          read new_date new_size new_path 0<&3 || break
+        fi
+      fi
+    done
+  }
+}
+
+
+#------------------------------------------------------------------------------
+#
+# Files removal.
+#
+
+remove_age () {
+  local date size path
+
+  exec 3< "$tmp_file"
+  while read date size path 0<&3 ; do
+    if [ $date -lt $limit ] ; then
+      delete "$path"
+    else
+      break
+    fi
+  done
+  exec 3<&-
+}
+
+
+remove_number () {
+  local number date size path
+
+  # Get the total number of files.
+  number=`wc -l $tmp_file | sed -e 's/ *//' -e 's/ .*//'`
+
+  # Remove the files.
+  exec 3< "$tmp_file"
+  while [ $number -gt $limit ] ; do
+    read date size path 0<&3
+    delete "$path"
+    number=$(($number - 1))
+  done
+  exec 3<&-
+}
+
+
+remove_filesize () {
+  local date size path
+
+  exec 3< "$tmp_file"
+  while read date size path 0<&3 ; do
+    if [ $size -$cmp $limit ] ; then
+      delete "$path"
+    else
+      break
+    fi
+  done
+  exec 3<&-
+}
+
+
+remove_size () {
+  local total_size date size path
+
+  # Compute files' total size.
+  total_size=0
+  exec 3< "$tmp_file"
+  while read date size path 0<&3 ; do
+    total_size=$(($total_size + $size))
+  done
+  exec 3<&-
+
+  # Remove the files.
+  exec 3< "$tmp_file"
+  while [ $total_size -gt $limit ] ; do
+    read date size path 0<&3
+    delete "$path"
+    total_size=$(($total_size - $size))
+  done
+  exec 3<&-
+}
+
+
+remove_size_du () {
+  local total_size date size path
+
+  # Get files' total size.
+  total_size=`du -s -b . | cut -f 1`
+
+  # Remove the files.
+  exec 3< "$tmp_file"
+  while [ $total_size -gt $limit ] ; do
+    read date size path 0<&3 || break
+    delete "$path"
+    total_size=`du -s -b . | cut -f 1`
+  done
+  exec 3<&-
+}
+
+
+delete () {
+  local path
+
+  path=`echo "$1" | sed -e "s%^\./%%"`
+  if [ $remove -eq 1 ] ; then
+    rm -f "$1" && verb "removed: $path"
+  else
+    echo "   $path"
+  fi
+}
+
+
+remove_empty_dirs () {
+  local dir
+
+  find . -type d | tac |
+  while read dir ; do
+    dir=`echo "$dir" | sed -e "s%^\./%%"`
+    if [ "$dir" != "." -a "$dir" != "$trash_system_root" ] ; then
+      rmdir "$dir" 2> /dev/null && verb "removed: $dir"
+    fi
+  done
+}
+
+
+#------------------------------------------------------------------------------
+#
+# Options.
+#
+
+options () {
+  local option
+
+  sort="history"
+  time="T"
+  cmp="gt"
+  remove=1
+  kilo=1024
+  quiet=0
+  verbose=0
+  unset limit
+  unset users
+  unset method
+
+  case "$1" in
+    --age|-A) maxtype="age" ; limit="$2" ; shift ;;
+    --filesize|-F) maxtype="filesize" ; limit="$2" ; sort="biggest" ; shift ;;
+    --number|-N) maxtype="number" ; limit="$2" ; shift ;;
+    --size|-S) maxtype="size" ; limit="$2" ; shift ;;
+    --help|-h) help ;;
+    --version|-V) version ;;
+    *) usage ;;
+  esac
+  shift
+
+  while [ $# -ne 0 ] ; do
+    case "$1" in
+      --du|-d) method="_du" ;;
+      --sort=oldest|-o) sort="oldest" ;;
+      --sort=biggest|-b) sort="biggest" ;;
+      --sort=smallest|-s) sort="smallest" ; cmp=lt ;;
+      --time=atime|--time=access|--time=use|-a) time="A" ;;
+      --time=ctime|--time-status|-c) time="C" ;;
+      --user|-u) users="$users|^$2:" ; shift ;;
+      --print|-p) remove=0 ;;
+      --si|-H) kilo=1000 ;;
+      --quiet|-q) quiet=1 ;;
+      --verbose|-v) verbose=1 ;;
+      --) break ;;
+      *) usage ;;
+    esac
+    shift
+  done
+}
+
+
+#------------------------------------------------------------------------------
+#
+# Checks.
+#
+
+checks () {
+  local unit number multiplier time_u
+
+  # The type of limit must be defined.
+  if [ -z "$limit" ] ; then
+    usage
+  fi
+
+  # Limiting files' age requires sorting by history or time.
+  if [ "$maxtype" = "age" -a \
+       "$sort" != "history" -a "$sort" != "oldest" ] ; then
+    error "you can't sort by size when restricting files' age."
+  fi
+
+  # Limiting files' size requires sorting by size.
+  if [ "$maxtype" = "filesize" -a "$sort" = "age" ] ; then
+    error "you can't sort by age when restricting files' size."
+  fi
+
+  # When sorting by history, time must be last access time.
+  if [ "$sort" = "history" ] ; then
+    if [ "$time" = "C" ] ; then
+      error "when sorting by history, time cannot be last status change time."
+    fi
+    time="A"
+  fi
+
+  if [ "$method" = "_du" ] ; then
+    # du method only apply to a size limit.
+    if [ "$maxtype" != "size" ] ; then
+       error "\`du' method only apply to a trash can size limit."
+    fi
+    # du method requires real file deletion.
+    if [ $remove -eq 0 ] ; then
+      error "you can't disable deleting when using \`du'."
+    fi
+  fi
+
+  # Compute the limit.
+  unit=`echo $limit | sed -e "s/^[0-9]*//"`
+  number=`echo $limit | sed -e "s/$unit$//"`
+  if [ -z "$number" ] ; then
+    error "the limit must be a positive integer."
+  fi
+  case $maxtype in
+    age)
+      case "$unit" in
+        s) time_u="seconds" ;;
+        m) time_u="minutes" ;;
+        h) time_u="hours" ;;
+        d|"") time_u="days" ;;
+        M) time_u="months" ;;
+        Y) time_u="years" ;;
+        *) error "\`$unit' is not a valid time unit." ;;
+      esac
+      limit=`date +"%s" -d "$number $time_u ago"`
+      ;;
+    number)
+      if [ "$unit" ] ; then
+        error "the limit must be a positive integer without a unit."
+      fi
+      ;;
+    size|filesize)
+      case "$unit" in
+        b|"") multiplier=1 ;;
+        k) multiplier=$kilo ;;
+        M) multiplier=$(($kilo * $kilo)) ;;
+        G) multiplier=$(($kilo * $kilo * $kilo)) ;;
+        *) error "\`$unit' is not a valid size unit." ;;
+      esac
+      limit=$(($number * $multiplier))
+      ;;
+  esac
+
+  # Quiet and verbose options are incompatible.
+  if [ $(($verbose + $quiet)) -eq 2 ] ; then
+    error "quiet and verbose options cannot be specified together."
+  fi
+
+  # Find users' home directories.
+  if [ ! -r "/etc/passwd" ] ; then
+    error "/etc/passwd does not exit or is unreadable."
+  fi
+  users=`echo "$users" | cut -c 2-`
+  user_homes=`egrep "$users" /etc/passwd | cut -d: -f6 | sort -u`
+
+  # Get configuration from libtrash configuration file.
+  if [ ! -r "$conf_file" ] ; then
+    error "libtrash configuration file does not exist or is unreadble."
+  fi
+  trash_can=`grep '^TRASH_CAN *= *' "$conf_file" | sed -e 's/TRASH_CAN *= *//'`
+  trash_system_root=`grep "^TRASH_SYSTEM_ROOT *= *" "$conf_file" |
+                     sed -e 's/TRASH_SYSTEM_ROOT *= *//'`
+  if [ -z "$trash_can" ] ; then
+    error "TRASH_CAN must be defined in \`$conf_file'."
+  fi
+  if [ -z "$trash_system_root" ] ; then
+    error "TRASH_SYSTEM_ROOT must be defined in \`$conf_file'"
+  fi
+
+  # Initialize temporary directories.
+  if [ ! -d "$tmp_dir" ] ; then
+    error "temporary directory does not exist."
+  fi
+  tmp_file="$tmp_dir/strash.$$"
+  tmp_history="$tmp_dir/strash_hist.$$"
+}
+
+
+#------------------------------------------------------------------------------
+#
+# Miscelleaneous.
+#
+
+warn () {
+  echo "$@" >&2
+}
+
+error () {
+  warn "$@"
+  out 1
+}
+
+print () {
+  if [ $quiet -eq 0 ] ; then
+    warn "$@"
+  fi
+}
+
+verb () {
+  if [ $verbose -eq 1 ] ; then
+    warn "   ""$@"
+  fi
+}
+
+out () {
+  rm -f "$tmp_file" "$tmp_history"
+  exit $1
+}
+
+signals () {
+  case $1 in
+    interruptible)
+      trap "echo 'Aborted' > /dev/tty ; out 1" 1 2 3 15 ;;
+    uninterruptible)
+      trap "" 1 2 3 15 ;;
+  esac
+}
+
+
+#------------------------------------------------------------------------------
+#
+# Main code.
+#
+
+# Trap signals.
+signals interruptible
+
+# Get options.
+options "$@"
+
+# Make some sanity checks and initializations.
+checks
+
+# Disable libtrash.
+export TRASH_OFF=YES
+
+# Disable pathname expansion to increase performance.
+set -f
+
+# Remove files in each trash can.
+for user_home in $user_homes ; do
+  if [ -d "$user_home/$trash_can" ] ; then
+    cd "$user_home/$trash_can" &&
+    strip_trash
+  fi
+done
+
+# Exit.
+out 0

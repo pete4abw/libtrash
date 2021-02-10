@@ -62,81 +62,66 @@
 
 typedef struct
 {
-   /* Configuration variables: */
-   
-   int in_case_of_failure;
-   int global_protection;
-   int should_warn;
-   int ignore_hidden;
-   int ignore_editor_backup;
-   int ignore_editor_temporary;
-   int protect_trash;
-   int libtrash_config_file_unremovable;
-   
-   int libtrash_off;
-   int general_failure;
-   
-   int intercept_unlink;
-   int intercept_rename;
-   int intercept_fopen;
-   int intercept_freopen;
-   int intercept_open;
+	/* Configuration variables: */
+	int in_case_of_failure;
+	int global_protection;
+	int should_warn;
+	int ignore_hidden;
+	int ignore_editor_backup;
+	int ignore_editor_temporary;
+	int protect_trash;
+	int libtrash_config_file_unremovable;
 
-   /* we store pointers for these three (but not the rest) because the code in
-    libtrash actually needs these three functions. */
-   
-   int (*real_unlink) (const char*);
-   int (*real_rename) (const char*, const char*);
-   FILE* (*real_fopen) (const char*, const char*);
-   
-   char *ignore_extensions;
-   char *relative_trash_can;
-   char *relative_trash_system_root;
-   char *unremovable_dirs;
-   char *uncovered_dirs;
-   char *temporary_dirs;
-   char *user_temporary_dirs;
-   char *removable_media_mount_points;
-   char *exceptions;
-   char *ignore_re;
-   char *absolute_trash_can;
-   char *absolute_trash_system_root;
-   char *home;
-   unsigned long long preserve_files_larger_than_limit;
+	int libtrash_off;
+	int general_failure;
+
+	int intercept_unlink;
+	int intercept_rename;
+	int intercept_fopen;
+	int intercept_freopen;
+	int intercept_open;
+
+	/* we store pointers for these three (but not the rest) because the code in
+	   libtrash actually needs these three functions. */
+
+	int (*real_unlink) (const char*);
+	int (*real_rename) (const char*, const char*);
+	FILE* (*real_fopen) (const char*, const char*);
+
+	char *ignore_extensions;
+	char *relative_trash_can;
+	char *relative_trash_system_root;
+	char *unremovable_dirs;
+	char *uncovered_dirs;
+	char *temporary_dirs;
+	char *user_temporary_dirs;
+	char *removable_media_mount_points;
+	char *exceptions;
+	char *ignore_re;
+	char *absolute_trash_can;
+	char *absolute_trash_system_root;
+	char *home;
+	unsigned long long preserve_files_larger_than_limit;
 }
 config;
 
 /* Initialization/exit routines: */
-
 void libtrash_init(config * cfg);
 
 void libtrash_fini(config * cfg);
 
 /* Helper functions (defined in helpers.c):  */
-
 char * convert_relative_into_absolute_paths(const char *relative_paths);
-
 int found_under_dir(const char *absolute_path, const char *dir_list);
-
 int dir_ok(const char *pathname, int *name_collision);
-
 int graft_file(const char *new_top_dir, const char *old_path, const char *what_to_cut, config *cfg);
-
 int hidden_file(const char *absolute_path);
-
 int ends_in_ignored_extension(const char *pathname, config *cfg);
-
 char* build_absolute_path(const char *path, int should_follow_final_symlink);
-
 int decide_action(const char *absolute_path, config *cfg);
-
 int can_write_to_dir(const char *filepath);
-
 void get_config_from_file(config *cfg);
-
 char* make_absolute_path_from_dirfd_relpath(int dirfd, const char *arg_pathname);
-
 void* get_real_function(int function_name);
 
 /* -------------------------------------------------------------------------------------------- */
-

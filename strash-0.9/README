@@ -1,0 +1,93 @@
+strash, version 0.9
+===================
+
+
+Description
+-----------
+
+strash is a Bourne shell script for use with libtrash by Manuel Arriaga
+(http://www.m-arriaga.net/software/libtrash/).
+
+It will enforce age, number or size limits on libtrash trash cans so they
+won't eventually fill your storage space.
+
+It is meant to be run by root on a regular basis.
+
+
+Requirements
+------------
+
+strash relies on common UNIX utilities that should already be installed on your
+system:
+
+- any Bourne compatible shell (ash, bash, ksh...)
+- fileutils (cp, du, mkdir, rm, rmdir)
+- findutils (find)
+- grep (egrep, grep)
+- sed (sed)
+- sh-utils (date)
+- textutils (cat, cut, sort, wc, tac)
+
+
+Installation
+------------
+
+1) Copy strash to a directory in your $PATH, such as /usr/sbin/.
+2) Edit the "Configuration" section of strash it you want to customize it.
+3) Copy strash.8 to a directory in your $MANPATH, such as /usr/man/man8/.
+4) Add a cron entry to run strash on a regular basis.
+
+
+Tips
+----
+
+If a history file and upper directories don't exist, strash will create them
+with root ownership. If you want them to be owned by another user, you'll have
+to create them before you run strash, and perhaps you'll want to add them to
+your skeleton directory (usually /etc/skel/).
+
+If you want history files to be strictly accurate, run strash before any
+application that access the files in trash cans, such as a local search engine,
+or exclude trash cans from indexing.
+
+If you want slightly better performance, use a temporary directory in RAM
+(use tmpfs for instance).
+
+
+Contact
+-------
+
+Please send bug reports and feature requests to <strash@connes.org>.
+
+
+Author
+------
+
+Written by Frederic Connes <fred@connes.org>.
+
+
+License
+-------
+
+GNU General Public License, Version 2, June 1991
+(http://www.gnu.org/copyleft/gpl.html).
+
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program; if not, write to the Free Software
+Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307, USA.
+
+
+Copyright
+---------
+
+Copyright (C) 2003 Frederic Connes.

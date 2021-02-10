@@ -67,29 +67,31 @@
  */
 
 #define _GNU_SOURCE /* for access to canonicalize_file_name() inside stdlib.h
-		     and the constant O_NOFOLLOW inside fcntl.h */
-
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
-#include <stdarg.h>
-#include <errno.h>
-
-#include <unistd.h>
-#include <sys/stat.h>
-#include <sys/types.h>
+		       and the constant O_NOFOLLOW inside fcntl.h */
 #define __USE_ATFILE 1 /* for access to AT_REMOVEDIR/AT_FDCWD macros inside fcntl.h */
-#include <fcntl.h>
-#include <dlfcn.h>
 
 #include "trash.h"
+
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
+#include <errno.h>
+#include <stdarg.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <unistd.h>
+#include <dlfcn.h>
+#include <fcntl.h>
 
 /* This is the return type of the "magic" function, do_fopen_or_freopen_or_open(): */
 
 typedef union
 {
-   int fd;
-   FILE *fp;
+	int fd;
+	FILE *fp;
 }
 FdOrFp;
 
@@ -103,82 +105,64 @@ static FdOrFp do_fopen_or_freopen_or_open(int function, const char *path, ...);
 
 FILE* fopen(const char *path, const char *mode)
 {
-   FdOrFp retval = do_fopen_or_freopen_or_open(FOPEN, path, mode);
-   
-   return retval.fp; /* returns a file pointer */
+	FdOrFp retval = do_fopen_or_freopen_or_open(FOPEN, path, mode);
+	return retval.fp; /* returns a file pointer */
 }
 
 FILE* fopen64(const char *path, const char *mode)
 {
-   FdOrFp retval = do_fopen_or_freopen_or_open(FOPEN64, path, mode);
-   
-   return retval.fp; /* returns a file pointer */
+	FdOrFp retval = do_fopen_or_freopen_or_open(FOPEN64, path, mode);
+	return retval.fp; /* returns a file pointer */
 }
 
 FILE* freopen(const char *path, const char *mode, FILE *stream)
 {
-   FdOrFp retval = do_fopen_or_freopen_or_open(FREOPEN, path, mode, stream);
-   
-   return retval.fp; /* returns a file pointer */
+	FdOrFp retval = do_fopen_or_freopen_or_open(FREOPEN, path, mode, stream);
+	return retval.fp; /* returns a file pointer */
 }
 
 FILE* freopen64(const char *path, const char *mode, FILE *stream)
 {
-   FdOrFp retval = do_fopen_or_freopen_or_open(FREOPEN64, path, mode, stream);
-   
-   return retval.fp; /* returns a file pointer */
+	FdOrFp retval = do_fopen_or_freopen_or_open(FREOPEN64, path, mode, stream);
+	return retval.fp; /* returns a file pointer */
 }
 
 int open(const char *path, int flags, ...)
 {
-   FdOrFp retval;
-   
-   /* If (flags & O_CREAT) or (flags & O_TMPFILE), then a third argument should be available: */
-   
-   if (flags & O_CREAT || flags & O_TMPFILE)
-     {
-	va_list arg_list;
-	
-	mode_t mode;
-	
-	va_start(arg_list, flags);
-	
-	mode = va_arg(arg_list, mode_t);
-	
-	va_end(arg_list);
-	
-	retval = do_fopen_or_freopen_or_open(OPEN, path, flags, mode);
-     }
-   else /* we don't need to get a third argument: */
-     retval = do_fopen_or_freopen_or_open(OPEN, path, flags);
-   
-   return retval.fd; /* return an integer (file descriptor) */
+	FdOrFp retval;
+	/* If (flags & O_CREAT) or (flags & O_TMPFILE), then a third argument should be available: */
+	if (flags & O_CREAT || flags & O_TMPFILE)
+	{
+		va_list arg_list;
+		mode_t mode;
+		va_start(arg_list, flags);
+		mode = va_arg(arg_list, mode_t);
+		va_end(arg_list);
+		retval = do_fopen_or_freopen_or_open(OPEN, path, flags, mode);
+	}
+	else /* we don't need to get a third argument: */
+		retval = do_fopen_or_freopen_or_open(OPEN, path, flags);
+
+	return retval.fd; /* return an integer (file descriptor) */
 }
 
 int open64(const char *path, int flags, ...)
 {
-   FdOrFp retval;
-   
-   /* If (flags & O_CREAT) or (flags & O_TMPFILE), then a third argument should be available: */
-   
-   if (flags & O_CREAT || flags & O_TMPFILE)
-     {
-	va_list arg_list;
-	
-	mode_t mode;
-	
-	va_start(arg_list, flags);
-	
-	mode = va_arg(arg_list, mode_t);
-	
-	va_end(arg_list);
-	
-	retval = do_fopen_or_freopen_or_open(OPEN64, path, flags, mode);
-     }
-   else /* we don't need to get a third argument: */
-     retval = do_fopen_or_freopen_or_open(OPEN64, path, flags);
-   
-   return retval.fd; /* return an integer (file descriptor) */
+	FdOrFp retval;
+	/* If (flags & O_CREAT) or (flags & O_TMPFILE), then a third argument should be available: */
+	if (flags & O_CREAT || flags & O_TMPFILE)
+	{
+		va_list arg_list;
+		mode_t mode;
+		va_start(arg_list, flags);
+		mode = va_arg(arg_list, mode_t);
+		va_end(arg_list);
+		retval = do_fopen_or_freopen_or_open(OPEN64, path, flags, mode);
+	}
+	else /* we don't need to get a third argument: */
+		retval = do_fopen_or_freopen_or_open(OPEN64, path, flags);
+
+	return retval.fd; /* return an integer (file descriptor) */
 }
 
 /* I had missed these two when I first implemented the wrappers around open(64)(). Since
@@ -188,100 +172,81 @@ int open64(const char *path, int flags, ...)
 
 int creat(const char *pathname, mode_t mode)
 {
-   return open(pathname, O_CREAT | O_WRONLY| O_TRUNC, mode);
+	return open(pathname, O_CREAT | O_WRONLY| O_TRUNC, mode);
 }
 
 int creat64(const char *pathname, mode_t mode)
 {  
-   return open64(pathname, O_CREAT | O_WRONLY| O_TRUNC, mode);
+	return open64(pathname, O_CREAT | O_WRONLY| O_TRUNC, mode);
 }
 
 #ifdef AT_FUNCTIONS
 
 int openat(int dirfd, const char *arg_pathname, int flags, ...)
 {
-   int retval = 0;
-   
-   char *real_path = make_absolute_path_from_dirfd_relpath(dirfd, arg_pathname);
-   
-   if (real_path == NULL)
-     {
-	return -1; /* XXX this exit should also be handled according to the rule specified by in_case_of_failure; for the time being we just "fail" */
-     }
-   
-   /* invoke our own open(); all the libtrash wrapping madness occurs there, no need to duplicate it here */
-   
-   /* If (flags & O_CREAT) or (flags & O_TMPFILE), then a third argument should be available: */
-   
-   if (flags & O_CREAT || flags & O_TMPFILE)
-     {
-	va_list arg_list;
-	
-	mode_t mode;
-	
-	va_start(arg_list, flags);
-	
-	mode = va_arg(arg_list, mode_t);
-	
-	va_end(arg_list);
-	
-	retval = open(real_path, flags, mode);
-     }
-   else /* we don't need to get a third argument: */
-     {
-	retval = open(real_path, flags);
-     }
-   
-   if (real_path != arg_pathname)
-     {
-	free(real_path); /* free mem allocated by canonicalize_file_name() above */
-     }
-   
-   return retval;
+	int retval = 0;
+	char *real_path = make_absolute_path_from_dirfd_relpath(dirfd, arg_pathname);
+	if (real_path == NULL)
+	{
+		return -1; /* XXX this exit should also be handled according to the rule specified by in_case_of_failure; for the time being we just "fail" */
+	}
+	/* invoke our own open(); all the libtrash wrapping madness occurs there, no need to duplicate it here */
+	/* If (flags & O_CREAT) or (flags & O_TMPFILE), then a third argument should be available: */
+	if (flags & O_CREAT || flags & O_TMPFILE)
+	{
+		va_list arg_list;
+		mode_t mode;
+		va_start(arg_list, flags);
+		mode = va_arg(arg_list, mode_t);
+		va_end(arg_list);
+		retval = open(real_path, flags, mode);
+	}
+	else /* we don't need to get a third argument: */
+	{
+		retval = open(real_path, flags);
+	}
+
+	if (real_path != arg_pathname)
+	{
+		free(real_path); /* free mem allocated by canonicalize_file_name() above */
+	}
+
+	return retval;
 }
 
 /* See important comment above (on top of open()). */
 
 int openat64(int dirfd, const char *arg_pathname, int flags, ...)
 {
-   int retval = 0;
-   
-   char *real_path = make_absolute_path_from_dirfd_relpath(dirfd, arg_pathname);
-   
-   if (real_path == NULL)
-     {
-	return -1; /* XXX this exit should also be handled according to the rule specified by in_case_of_failure; for the time being we just "fail" */
-     }
-   
-   /* invoke our own open64(); all the libtrash wrapping madness occurs there, no need to duplicate it here */
-   
-   /* If (flags & O_CREAT) or (flags & O_TMPFILE), then a third argument should be available: */
-   
-   if (flags & O_CREAT || flags & O_TMPFILE)
-     {
-	va_list arg_list;
-	
-	mode_t mode;
-	
-	va_start(arg_list, flags);
-	
-	mode = va_arg(arg_list, mode_t);
-	
-	va_end(arg_list);
-	
-	retval = open64(real_path, flags, mode);
-     }
-   else /* we don't need to get a third argument: */
-     {
-	retval = open64(real_path, flags);
-     }
-   
-   if (real_path != arg_pathname)
-     {
-	free(real_path); /* free mem allocated by canonicalize_file_name() above */
-     }
-   
-   return retval;
+	int retval = 0;
+	char *real_path = make_absolute_path_from_dirfd_relpath(dirfd, arg_pathname);
+	if (real_path == NULL)
+	{
+		return -1; /* XXX this exit should also be handled according to the rule specified by in_case_of_failure; for the time being we just "fail" */
+	}
+	/* invoke our own open64(); all the libtrash wrapping madness occurs there, no need to duplicate it here */
+	/* If (flags & O_CREAT) or (flags & O_TMPFILE), then a third argument should be available: */
+
+	if (flags & O_CREAT || flags & O_TMPFILE)
+	{
+		va_list arg_list;
+		mode_t mode;
+		va_start(arg_list, flags);
+		mode = va_arg(arg_list, mode_t);
+		va_end(arg_list);
+		retval = open64(real_path, flags, mode);
+	}
+	else /* we don't need to get a third argument: */
+	{
+		retval = open64(real_path, flags);
+	}
+
+	if (real_path != arg_pathname)
+	{
+		free(real_path); /* free mem allocated by canonicalize_file_name() above */
+	}
+
+	return retval;
 }
 
 #endif
@@ -297,61 +262,61 @@ int openat64(int dirfd, const char *arg_pathname, int flags, ...)
  * we are emulating for use in diagnostics messages (the code isn't enclosed in brackets because the pointers
  * must be accessible to the rest of this function): */
 
-#define DETERMINE_FUNCTION_NAME()                                                         \
-   if (function == FOPEN)                                                                 \
-       function_name = fopen_name;                                                          \
-   else if (function == FOPEN64)                                                          \
-     function_name = fopen64_name;                                                        \
-   else if (function == FREOPEN)                                                          \
-     function_name = freopen_name;                                                        \
-   else if (function == FREOPEN64)                                                        \
-     function_name = freopen64_name;                                                      \
-   else if (function == OPEN)                                                             \
-     function_name = open_name;                                                           \
-   else if (function == OPEN64)                                                           \
-     function_name = open64_name;                                                         \
-   
+#define DETERMINE_FUNCTION_NAME()		\
+	if (function == FOPEN)			\
+		function_name = fopen_name;	\
+	else if (function == FOPEN64)		\
+		function_name = fopen64_name;	\
+	else if (function == FREOPEN)		\
+		function_name = freopen_name;	\
+	else if (function == FREOPEN64)		\
+		function_name = freopen64_name;	\
+	else if (function == OPEN)		\
+		function_name = open_name;	\
+	else if (function == OPEN64)		\
+		function_name = open64_name;	\
+
 /* -------------------------------------------------------------------- */
 
 /* This (uglier!) macro extracts the arguments that are missing given the function we are running as: */
 
-#define EXTRACT_MISSING_ARGS()                                       \
-   {                                                                 \
-      va_start(arg_list, path);                                      \
-      \
-      if (function == FOPEN || function == FREOPEN ||                \
-	     function == FOPEN64 || function == FREOPEN64)           \
-	mode_str = va_arg(arg_list, char*);                          \
-      if (function == FREOPEN || function == FREOPEN64)              \
-	stream = va_arg(arg_list, FILE*);                            \
-      \
-      if (function == OPEN || function == OPEN64)                    \
-	{                                                            \
-	   flags = va_arg(arg_list, int);                            \
-	   if (flags & O_CREAT || flags & O_TMPFILE)                 \
-	     mode = va_arg(arg_list, mode_t);                        \
-	}                                                            \
-      \
-      va_end(arg_list);                                              \
-   }
+#define EXTRACT_MISSING_ARGS()						\
+{									\
+	va_start(arg_list, path);					\
+									\
+	if (function == FOPEN || function == FREOPEN ||			\
+			function == FOPEN64 || function == FREOPEN64)	\
+		mode_str = va_arg(arg_list, char*);			\
+	if (function == FREOPEN || function == FREOPEN64)		\
+		stream = va_arg(arg_list, FILE*);			\
+									\
+	if (function == OPEN || function == OPEN64)			\
+	{								\
+		flags = va_arg(arg_list, int);				\
+		if (flags & O_CREAT || flags & O_TMPFILE)		\
+		mode = va_arg(arg_list, mode_t);			\
+	}								\
+									\
+	va_end(arg_list);						\
+}
 
 /* -------------------------------------------------------------------------------- */
 
 /* This macro makes the function return the appropriate error code for the function we are running as, and sets errno
- to the value err (in most cases, it will be zero in order to avoid confusing the caller with meaningless errno values
- set by other library functions used by this meta-wrapper): */
+   to the value err (in most cases, it will be zero in order to avoid confusing the caller with meaningless errno values
+   set by other library functions used by this meta-wrapper): */
 
-#define RETURN_FUNCTION_ERROR(err)                              \
-   {                                                          \
-      FdOrFp retval;                                          \
-      if (function == FOPEN || function == FREOPEN ||         \
-	     function == FOPEN64 || function == FREOPEN64)    \
-	retval.fp = NULL;                                     \
-      else /* if (function == OPEN || function == OPEN64)*/   \
-	retval.fd = -1;                                       \
-      errno = err;                                            \
-      return retval; /* the caller will know which member of the union to access */ \
-   }
+#define RETURN_FUNCTION_ERROR(err)							\
+{											\
+	FdOrFp retval;									\
+	if (function == FOPEN || function == FREOPEN ||					\
+			function == FOPEN64 || function == FREOPEN64)			\
+	retval.fp = NULL;								\
+	else /* if (function == OPEN || function == OPEN64)*/				\
+	retval.fd = -1;									\
+	errno = err;									\
+	return retval; /* the caller will know which member of the union to access */ 	\
+}
 
 /* --------------------------------------------------------------------------------- */
 
@@ -359,42 +324,42 @@ int openat64(int dirfd, const char *arg_pathname, int flags, ...)
  * evaluates to its return value: (Note: "real function" refers to the
  * function wrapped by the libtrash function which called us.) */
 
-#define REAL_FUNCTION()                                                                                     \
-   (function == FOPEN ? (*real_fopen) (path, mode_str) :                                                    \
-       (function == FOPEN64 ? (*real_fopen64) (path, mode_str) :                                            \
-	   (function == FREOPEN ? (*real_freopen) (path, mode_str, stream) :                                \
-	       (function == FREOPEN64 ? (*real_freopen64) (path, mode_str, stream) :                        \
-		   (function == OPEN ?                                                                      \
-		       ( (flags & O_CREAT || flags & O_TMPFILE) ? (*real_open) (path, flags, mode) :        \
-			   (*real_open) (path, flags) ) :                                                   \
-		       ( (flags & O_CREAT || flags & O_TMPFILE) ? (*real_open64) (path, flags, mode) :         \
-			   (*real_open64) (path, flags) ) ) ) ) ) )
+#define REAL_FUNCTION()										\
+	(function == FOPEN ? (*real_fopen) (path, mode_str) :					\
+	 (function == FOPEN64 ? (*real_fopen64) (path, mode_str) :				\
+	  (function == FREOPEN ? (*real_freopen) (path, mode_str, stream) :			\
+	   (function == FREOPEN64 ? (*real_freopen64) (path, mode_str, stream) :		\
+	    (function == OPEN ?									\
+	     ( (flags & O_CREAT || flags & O_TMPFILE) ? (*real_open) (path, flags, mode) :	\
+	       (*real_open) (path, flags) ) :							\
+	       ( (flags & O_CREAT || flags & O_TMPFILE) ? (*real_open64) (path, flags, mode) :	\
+		 (*real_open64) (path, flags) ) ) ) ) ) )
 
 /* ------------------------------------------------------------------------------------- */
 
 /* This macro makes the function return the value returned by the function it is emulating, and lets the errno
- value be defined by that function: */
+   value be defined by that function: */
 
-#define RETURN_REAL_FUNCTION()                                  \
-   {                                                          \
-      FdOrFp retval;                                          \
-      if (function == FOPEN || function == FREOPEN ||         \
-	     function == FOPEN64 || function == FREOPEN64)    \
-	retval.fp = REAL_FUNCTION();                          \
-      else /* if (function == OPEN || function == OPEN64) */  \
-	retval.fd = REAL_FUNCTION();                          \
-      return retval;                                          \
-   }
+#define RETURN_REAL_FUNCTION()						\
+{									\
+	FdOrFp retval;							\
+	if (function == FOPEN || function == FREOPEN ||			\
+			function == FOPEN64 || function == FREOPEN64)	\
+		retval.fp = REAL_FUNCTION();				\
+	else /* if (function == OPEN || function == OPEN64) */		\
+		retval.fd = REAL_FUNCTION();				\
+	return retval;							\
+}
 
 /* --------------------------------------------------------------------------------------- */
 
 /* This macro evaluates to the intercept_* variable matching the function we are running
- as: */
+as: */
 
-#define REAL_FUNCTION_OFF()                                                       \
-   ((function == FOPEN || function == FOPEN64) ? !cfg.intercept_fopen :           \
-       ((function == FREOPEN || function == FREOPEN64) ? !cfg.intercept_freopen : \
-	   !cfg.intercept_open) )
+#define REAL_FUNCTION_OFF()								\
+	((function == FOPEN || function == FOPEN64) ? !cfg.intercept_fopen :		\
+	 ((function == FREOPEN || function == FREOPEN64) ? !cfg.intercept_freopen :	\
+	  !cfg.intercept_open) )
 
 /* ------------------------------------------------------------------------------------------ */
 
@@ -402,24 +367,24 @@ int openat64(int dirfd, const char *arg_pathname, int flags, ...)
  * of libtrash. It checks the value of the configuration variable cfg.in_case_of_failure and acts accordingly, also
  * asking RETURN_FUNCTION_ERROR() to set the variable errno to zero in order to avoid confusing the caller: */
 
-#define DO_HANDLE_ERROR()                                     \
-   {                                                        \
-      if(cfg.in_case_of_failure == ALLOW_DESTRUCTION)       \
-	RETURN_REAL_FUNCTION()                              \
-	  else /* if (cfg.in_case_of_failure == PROTECT) */ \
-	RETURN_FUNCTION_ERROR(0);                           \
-   }
+#define DO_HANDLE_ERROR()					\
+{								\
+	if(cfg.in_case_of_failure == ALLOW_DESTRUCTION)		\
+		RETURN_REAL_FUNCTION()				\
+	else /* if (cfg.in_case_of_failure == PROTECT) */	\
+		RETURN_FUNCTION_ERROR(0);			\
+}
 
 /* ----------------------------------------------------------------------------------------------- */
 
 /* This macro evaluates to TRUE if the function we are emulating was called in a mode which allows
  * truncating the specified file, to zero otherwise: */
 
-#define WRITE_TRUNCATE_MODE_ENABLED()                                                      \
-   ( ( (function == FOPEN || function == FREOPEN ||                                        \
-	   function == FOPEN64 || function == FREOPEN64) && mode_str[0] == 'w' ) ||        \
-	( (function == OPEN || function == OPEN64) && !(flags & O_TMPFILE) &&              \
-	     (flags & O_WRONLY || flags & O_RDWR) && (flags & O_TRUNC) ) )
+#define WRITE_TRUNCATE_MODE_ENABLED()							\
+	( ( (function == FOPEN || function == FREOPEN ||				\
+	     function == FOPEN64 || function == FREOPEN64) && mode_str[0] == 'w' ) ||	\
+	     ( (function == OPEN || function == OPEN64) && !(flags & O_TMPFILE) &&	\
+	       (flags & O_WRONLY || flags & O_RDWR) && (flags & O_TRUNC) ) )
 
 /* ----------------------------------------------------------------------------------------------- */
 
@@ -435,22 +400,23 @@ int openat64(int dirfd, const char *arg_pathname, int flags, ...)
  * the function lstat() instead so that we can detect symlinks.
  */
 
-#define TEST_FILE_EXISTENCE()                                                                           \
-   {                                                                                                  \
-      if ( (function == OPEN || function == OPEN64) && (flags & O_NOFOLLOW) )                                               \
-	error = lstat(path, &file_stat);                                                              \
-      else                                                                                            \
-	error = stat(path, &file_stat);                                                               \
-      \
-      if ( (error && errno == ENOENT)                 ||                                              \
-	      (!error && S_ISDIR(file_stat.st_mode))  ||                                              \
-	      (!error && !S_ISREG(file_stat.st_mode) && !S_ISLNK(file_stat.st_mode)) ||               \
-	      (!error && (function == OPEN || function == OPEN64) && (flags & O_NOFOLLOW) && S_ISLNK(file_stat.st_mode) ) ) \
-	{                                                                                             \
-	   libtrash_fini(&cfg);                                                                       \
-	   RETURN_REAL_FUNCTION();                                                                    \
-	}                                                                                             \
-   }
+#define TEST_FILE_EXISTENCE()										\
+{													\
+	if ( (function == OPEN || function == OPEN64) && (flags & O_NOFOLLOW) )				\
+		error = lstat(path, &file_stat);							\
+	else												\
+		error = stat(path, &file_stat);								\
+													\
+	if ( (error && errno == ENOENT)								||	\
+		(!error && S_ISDIR(file_stat.st_mode))						||	\
+		(!error && !S_ISREG(file_stat.st_mode) && !S_ISLNK(file_stat.st_mode)) 		||	\
+		(!error && (function == OPEN || function == OPEN64) 				&&	\
+		 (flags & O_NOFOLLOW) && S_ISLNK(file_stat.st_mode) ) ) 				\
+	{												\
+		libtrash_fini(&cfg);									\
+		RETURN_REAL_FUNCTION();									\
+	}												\
+}
 
 /* ----------------------------------------------------------------------------------------- */
 
@@ -464,14 +430,14 @@ int openat64(int dirfd, const char *arg_pathname, int flags, ...)
  * to tell it which mode to use when creating it. We will instruct open() to create a new file with the same
  * permissions (mode) which the original one had: */
 
-#define DO_OPEN_SPECIFIC_PREPARATION()                                       \
-   {                                                                         \
-      if (function == OPEN || function == OPEN64)                            \
-	{                                                                    \
-	   flags |= O_CREAT;                                                 \
-	   mode = file_stat.st_mode;                                         \
-	}                                                                    \
-   }
+#define DO_OPEN_SPECIFIC_PREPARATION()			\
+{							\
+	if (function == OPEN || function == OPEN64)	\
+	{						\
+		flags |= O_CREAT;			\
+		mode = file_stat.st_mode;		\
+	}						\
+}
 
 /* After this code snippet is executed, the macro RETURN_REAL_FUNCTION() will see that (flags & O_CREAT) and
  * conclude that it needs to pass a third argument - mode - to the real open(), and will do so, telling open()
@@ -488,31 +454,30 @@ int openat64(int dirfd, const char *arg_pathname, int flags, ...)
  * we return an error code: (the code isn't delimited by brackets because the pointers need to be available
  * to the rest of the function) */
 
-#define GET_REAL_FUNCTION()                                                            \
-   FILE* (*real_fopen) (const char *path, const char *mode) = NULL;                      \
-   FILE* (*real_fopen64) (const char *path, const char *mode) = NULL;                    \
-   FILE* (*real_freopen) (const char *path, const char *mode, FILE *stream) = NULL;      \
-   FILE* (*real_freopen64) (const char *path, const char *mode, FILE *stream) = NULL;    \
-   int (*real_open) (const char *path, int flags, ...) = NULL;                         \
-   int (*real_open64) (const char *path, int flags, ...) = NULL;                       \
-   \
-   \
-   if (function == FOPEN && !( real_fopen = get_real_function(function) ) ) \
-     error = 1; \
-   else if (function == FOPEN64 && !( real_fopen64 = get_real_function(function) ) ) \
-     error = 1; \
-   else if (function == FREOPEN && !( real_freopen = get_real_function(function) ) ) \
-     error = 1; \
-   else if (function == FREOPEN64 && !( real_freopen64 = get_real_function(function) ) ) \
-     error = 1; \
-   else if (function == OPEN && !( real_open = get_real_function(function) ) ) \
-     error = 1; \
-   else if (function == OPEN64 && !( real_open64 = get_real_function(function) ) ) \
-     error = 1; \
-   \
-   if (error)                                                                   \
-     RETURN_FUNCTION_ERROR(0);                                                      \
-   
+#define GET_REAL_FUNCTION()									\
+	FILE* (*real_fopen) (const char *path, const char *mode) = NULL;			\
+	FILE* (*real_fopen64) (const char *path, const char *mode) = NULL;			\
+	FILE* (*real_freopen) (const char *path, const char *mode, FILE *stream) = NULL;	\
+	FILE* (*real_freopen64) (const char *path, const char *mode, FILE *stream) = NULL;	\
+	int (*real_open) (const char *path, int flags, ...) = NULL;				\
+	int (*real_open64) (const char *path, int flags, ...) = NULL;				\
+												\
+	if (function == FOPEN && !( real_fopen = get_real_function(function) ) ) 		\
+		error = 1; 									\
+	else if (function == FOPEN64 && !( real_fopen64 = get_real_function(function) ) ) 	\
+		error = 1; 									\
+	else if (function == FREOPEN && !( real_freopen = get_real_function(function) ) ) 	\
+		error = 1; 									\
+	else if (function == FREOPEN64 && !( real_freopen64 = get_real_function(function) ) ) 	\
+		error = 1; 									\
+	else if (function == OPEN && !( real_open = get_real_function(function) ) ) 		\
+		error = 1; 									\
+	else if (function == OPEN64 && !( real_open64 = get_real_function(function) ) ) 	\
+		error = 1; 									\
+												\
+	if (error)										\
+	RETURN_FUNCTION_ERROR(0);								\
+
 
 /* ----------------------------------------------------------------------------- */
 
@@ -520,227 +485,188 @@ int openat64(int dirfd, const char *arg_pathname, int flags, ...)
 
 static FdOrFp do_fopen_or_freopen_or_open(int function, const char *path, ...)
 {
-   
-   /* The following four variables are used to hold the missing arguments: */
-   
-   char *mode_str = NULL;       /* used by fopen() and freopen() */
-   
-   FILE *stream = NULL;          /* used only by freopen() */
-   
-   mode_t mode;                 /* used only by open() */
-   
-   int flags = 0;               /* used only by open() */
-   
-   /* Other variables: */
-   
-   va_list arg_list;
-   
-   struct stat file_stat;
-   
-   int error = 0;
-   
-   char *absolute_path = NULL;
-   
-   int file_should = 0;
-   
+
+	/* The following four variables are used to hold the missing arguments: */
+
+	char *mode_str = NULL;		/* used by fopen() and freopen() */
+	FILE *stream = NULL;		/* used only by freopen() */
+	mode_t mode;			/* used only by open() */
+	int flags = 0;			/* used only by open() */
+	/* Other variables: */
+	va_list arg_list;
+	struct stat file_stat;
+	int error = 0;
+	char *absolute_path = NULL;
+	int file_should = 0;
+
 #ifdef DEBUG
-   const char
-     *fopen_name   = "fopen",   *fopen64_name = "fopen64",
-     *freopen_name = "freopen", *freopen64_name = "freopen64",
-     *open_name    = "open",    *open64_name = "open64";
-   
-   const char *function_name = NULL;
+	const char
+		*fopen_name   = "fopen",   *fopen64_name = "fopen64",
+		*freopen_name = "freopen", *freopen64_name = "freopen64",
+		*open_name    = "open",    *open64_name = "open64";
+
+	const char *function_name = NULL;
 #endif
-   
-   config cfg;
-   
-   /* This function is different from unlink() and rename(), because it gets invoked by glibc functions called by libtrash_init().
-    * In order to avoid an infinite loop, we mustn't call libtrash_init() in those situations, but rather invoke the real open
-    * function. For that reason, this function needs to get a pointer to the "real function" it is playing all by itself
-    * (that is one of the jobs libtrash_init() does for the other functions).
-    * How does this function avoid calling libtrash_init() when it has been called by one of the glibc functions called by libtrash_init()?
-    * Fortunately, those functions only need to open files in read-only mode, so we can simply quit before calling libtrash_init()
-    * if we were asked to open a file in read-mode, thereby avoiding this problem. If, in the future, the glibc functions
-    * called by libtrash_init need to open files in write-mode libtrash in its current state will become unusable. I really can't
-    * think of a better (and thread-safe) solution.
-    */
-   
-   /* First, get a pointer to the real functions: (if this fails, we quit because
-    * there's nothing else we can do) */
-   
-   GET_REAL_FUNCTION();
-   
-   /* Get the missing arguments and store them in the above mentioned variables: */
-   
-   EXTRACT_MISSING_ARGS();
-   
-   /* If DEBUG is defined, we need to know the name of the function we are emulating: */
-   
+
+	config cfg;
+
+	/* This function is different from unlink() and rename(), because it gets invoked by glibc functions called by libtrash_init().
+	 * In order to avoid an infinite loop, we mustn't call libtrash_init() in those situations, but rather invoke the real open
+	 * function. For that reason, this function needs to get a pointer to the "real function" it is playing all by itself
+	 * (that is one of the jobs libtrash_init() does for the other functions).
+	 * How does this function avoid calling libtrash_init() when it has been called by one of the glibc functions called by libtrash_init()?
+	 * Fortunately, those functions only need to open files in read-only mode, so we can simply quit before calling libtrash_init()
+	 * if we were asked to open a file in read-mode, thereby avoiding this problem. If, in the future, the glibc functions
+	 * called by libtrash_init need to open files in write-mode libtrash in its current state will become unusable. I really can't
+	 * think of a better (and thread-safe) solution.
+	 */
+
+	/* First, get a pointer to the real functions: (if this fails, we quit because
+	 * there's nothing else we can do) */
+	GET_REAL_FUNCTION();
+
+	/* Get the missing arguments and store them in the above mentioned variables: */
+	EXTRACT_MISSING_ARGS();
+
+	/* If DEBUG is defined, we need to know the name of the function we are emulating: */
 #ifdef DEBUG
-   DETERMINE_FUNCTION_NAME();
-   
-   fprintf(stderr, "Entering do_fopen_or_freopen_or_open(). Arg: %s.\n", path);
+	DETERMINE_FUNCTION_NAME();
+	fprintf(stderr, "Entering do_fopen_or_freopen_or_open(). Arg: %s.\n", path);
 #endif
-   
-   /* Do our arguments specify write-mode with orders to truncate existing files? If they don't (or if we were passed a NULL argument), we have nothing
-    * to do:
-    */
-   
-   if (!WRITE_TRUNCATE_MODE_ENABLED() || path == NULL)
-     {
-	
+
+	/* Do our arguments specify write-mode with orders to truncate existing files? If they don't (or if we were passed a NULL argument), we have nothing
+	 * to do:
+	 */
+	if (!WRITE_TRUNCATE_MODE_ENABLED() || path == NULL)
+	{
+
 #ifdef DEBUG
-	fprintf(stderr, "Passing request to the real %s because the arguments we were passed don't specify "
-		"write-mode with orders to truncate existing files (or we have a NULL file name).\n", function_name);
+		fprintf(stderr, "Passing request to the real %s because the arguments we were passed don't specify "
+				"write-mode with orders to truncate existing files (or we have a NULL file name).\n", function_name);
 #endif
-	RETURN_REAL_FUNCTION(); /* we don't need to call libtrash_fini() here. */
-     }
-   
-   /* First we call libtrash_init(), which will set the configuration variables: */
-   
-   libtrash_init(&cfg);
-   
-   /* From this point on, we always call libtrash_fini() before quittting. */
-   
-   /* Is cfg.libtrash_off set to true or cfg.intercept_(real_function) set to false? If so, just invoke the real function: */
-   
-   if (cfg.libtrash_off || REAL_FUNCTION_OFF())
-     {
+		RETURN_REAL_FUNCTION(); /* we don't need to call libtrash_fini() here. */
+	}
+
+	/* First we call libtrash_init(), which will set the configuration variables: */
+	libtrash_init(&cfg);
+
+	/* From this point on, we always call libtrash_fini() before quittting. */
+	/* Is cfg.libtrash_off set to true or cfg.intercept_(real_function) set to false? If so, just invoke the real function: */
+	if (cfg.libtrash_off || REAL_FUNCTION_OFF())
+	{
 #ifdef DEBUG
-	fprintf(stderr, "Passing request to the real function because libtrash_off = true or intercept_%s = false.\n", function_name);
+		fprintf(stderr, "Passing request to the real function because libtrash_off = true or intercept_%s = false.\n", function_name);
 #endif
-	libtrash_fini(&cfg);
-	RETURN_REAL_FUNCTION();
-     }
-   
-   /* Is cfg.general_failure set? If so, invoke the error handler: */
-   
-   if (cfg.general_failure)
-     {
+		libtrash_fini(&cfg);
+		RETURN_REAL_FUNCTION();
+	}
+
+	/* Is cfg.general_failure set? If so, invoke the error handler: */
+	if (cfg.general_failure)
+	{
 #ifdef DEBUG
-	fprintf(stderr, "Invoking %s_handle_error() because general_failure is set.\n", function_name);
+		fprintf(stderr, "Invoking %s_handle_error() because general_failure is set.\n", function_name);
 #endif
-	libtrash_fini(&cfg);
-	DO_HANDLE_ERROR();
-     }
-   
-   /* Does this file already exist? If it doesn't (or if path is the path to a directory, or to a symlink and we
-    are operating as open() and the O_NOFOLLOW is set in the flags), we invoke the real function because no
-    data loss can occurr. This test, like all other function-specific tests in this "meta-function", is encapsulated
-    in a macro, which invokes the real function and returns its return value if any of those conditions is true: */
-   
+		libtrash_fini(&cfg);
+		DO_HANDLE_ERROR();
+	}
+
+	/* Does this file already exist? If it doesn't (or if path is the path to a directory, or to a symlink and we
+	 * are operating as open() and the O_NOFOLLOW is set in the flags), we invoke the real function because no
+	 * data loss can occurr. This test, like all other function-specific tests in this "meta-function", is encapsulated
+	 * in a macro, which invokes the real function and returns its return value if any of those conditions is true: */
+
 #ifdef DEBUG
-   fprintf(stderr, "Doesn't file %s exist?...\n", path);
+	fprintf(stderr, "Doesn't file %s exist?...\n", path);
 #endif
-   
-   TEST_FILE_EXISTENCE(); /* Invokes libtrash_fini() by itself if it decides to return. */
-   
+
+	TEST_FILE_EXISTENCE(); /* Invokes libtrash_fini() by itself if it decides to return. */
+
 #ifdef DEBUG
-   fprintf(stderr, "It does exist.\n");
+	fprintf(stderr, "It does exist.\n");
 #endif
-   
-   /* From this point on we need the absolute canonical path to the file called path; we invoke
-    * canonicalize_file_name() (unlike unlink() and rename(), these three functions follow all symlinks in
-    * the path, including the filename itself, if it is one): */
-   
-   absolute_path = canonicalize_file_name(path); /* We can use canon...() directly, rather than build_absolute_path(),
-						  because by now we are sure that a file called path exists and we don't
-						  mind following a symlink in the last component of the path (unlike what
-						  happens in unlink.c and rename.c). */
-   
-   if (!absolute_path)
-     {
+
+	/* From this point on we need the absolute canonical path to the file called path; we invoke
+	 * canonicalize_file_name() (unlike unlink() and rename(), these three functions follow all symlinks in
+	 * the path, including the filename itself, if it is one): */
+	absolute_path = canonicalize_file_name(path); /* We can use canon...() directly, rather than build_absolute_path(),
+							 because by now we are sure that a file called path exists and we don't
+							 mind following a symlink in the last component of the path (unlike what
+							 happens in unlink.c and rename.c). */
+
+	if (!absolute_path)
+	{
 #ifdef DEBUG
-	fprintf(stderr, "Unable to build absolute_path\nInvoking DO_HANDLE_ERROR() inside %s.\n", function_name);
+		fprintf(stderr, "Unable to build absolute_path\nInvoking DO_HANDLE_ERROR() inside %s.\n", function_name);
 #endif
-	libtrash_fini(&cfg);
-	
-	DO_HANDLE_ERROR();
-     }
-   
-   /* ++++++++++++++++ */
-   
-   /* Independently of the way in which the argument was written, absolute_newpath now holds the absolute
-    * path to the file, free of any "/../" or "/./" and with all symlinks resolved. */
-   
-   /* We now need to decide whether to warrant protection to this file which is about to be truncated; we
-    * do so by invoking the function decide_action() and analysing its return value: */
-   
-   file_should = decide_action(absolute_path, &cfg);
-   
-   switch (file_should)
-     {
-	
-      case BE_REMOVED: /* free memory, call real function and return its return value: */
-	
+		libtrash_fini(&cfg);
+
+		DO_HANDLE_ERROR();
+	}
+
+	/* ++++++++++++++++ */
+
+	/* Independently of the way in which the argument was written, absolute_newpath now holds the absolute
+	 * path to the file, free of any "/../" or "/./" and with all symlinks resolved. */
+
+	/* We now need to decide whether to warrant protection to this file which is about to be truncated; we
+	 * do so by invoking the function decide_action() and analysing its return value: */
+	file_should = decide_action(absolute_path, &cfg);
+
+	switch (file_should)
+	{
+
+		case BE_REMOVED: /* free memory, call real function and return its return value: */
+
 #ifdef DEBUG
-	fprintf(stderr, "decide_action() told %s() to permanently destroy file %s.\n", function_name, absolute_path);
+			fprintf(stderr, "decide_action() told %s() to permanently destroy file %s.\n", function_name, absolute_path);
 #endif
-	
-	free(absolute_path);
-	
-	libtrash_fini(&cfg);
-	
-	RETURN_REAL_FUNCTION();
-	
-	break;
-	
-      case BE_LEFT_UNTOUCHED: /* free memory, return error code and DON'T call real function: */
-	
+			free(absolute_path);
+			libtrash_fini(&cfg);
+			RETURN_REAL_FUNCTION();
+			break;
+		case BE_LEFT_UNTOUCHED: /* free memory, return error code and DON'T call real function: */
 #ifdef DEBUG
-	fprintf(stderr, "decide_action() told %s() to leave %s untouched and return an error code.\n", function_name,
-		absolute_path);
+			fprintf(stderr, "decide_action() told %s() to leave %s untouched and return an error code.\n", function_name,
+					absolute_path);
 #endif
-	
-	free(absolute_path);
-	
-	libtrash_fini(&cfg);
-	
-	RETURN_FUNCTION_ERROR(EACCES); /* setting errno to EACCES so that the caller interprets this error as being due to
-					* "insufficient permissions" */
-	
-	break;
-	
-      case BE_SAVED: /* move file into trash can (with graft_file()), free memory and either invoke real function or error */
-	/* handler, deciding what to do according to the return value of graft_file(): */
-	
+			free(absolute_path);
+			libtrash_fini(&cfg);
+			RETURN_FUNCTION_ERROR(EACCES); /* setting errno to EACCES so that the caller interprets this error as being due to
+							* "insufficient permissions" */
+			break;
+		case BE_SAVED: /* move file into trash can (with graft_file()), free memory and either invoke real function or error */
+			/* handler, deciding what to do according to the return value of graft_file(): */
 #ifdef DEBUG
-	fprintf(stderr, "decide_action() told %s() to save a copy of %s in the trash can and then invoke the real function.\n",
-		function_name, absolute_path);
+			fprintf(stderr, "decide_action() told %s() to save a copy of %s in the trash can and then invoke the real function.\n",
+					function_name, absolute_path);
 #endif
-	
-	if (found_under_dir(absolute_path, cfg.home))
-	  error = graft_file(cfg.absolute_trash_can, absolute_path, cfg.home, &cfg);
-	else
-	  error = graft_file(cfg.absolute_trash_system_root, absolute_path, NULL, &cfg);
-	
-	free(absolute_path);
-	
-	if (error) /* graft_file() failed, look at in_case_of_failure and decide what to do: */
-	  {
+			if (found_under_dir(absolute_path, cfg.home))
+				error = graft_file(cfg.absolute_trash_can, absolute_path, cfg.home, &cfg);
+			else
+				error = graft_file(cfg.absolute_trash_system_root, absolute_path, NULL, &cfg);
+
+			free(absolute_path);
+			if (error) /* graft_file() failed, look at in_case_of_failure and decide what to do: */
+			{
 #ifdef DEBUG
-	     fprintf(stderr, "graft_file() failed, %s() invoking DO_HANDLE_ERROR().\n", function_name);
+				fprintf(stderr, "graft_file() failed, %s() invoking DO_HANDLE_ERROR().\n", function_name);
 #endif
-	     libtrash_fini(&cfg);
-	     
-	     DO_HANDLE_ERROR();
-	  }
-	else /* if graft_file() succeeded and the file is safely stored, proceed with the call to the real function: */
-	  {
+				libtrash_fini(&cfg);
+				DO_HANDLE_ERROR();
+			}
+			else /* if graft_file() succeeded and the file is safely stored, proceed with the call to the real function: */
+			{
 #ifdef DEBUG
-	     fprintf(stderr, "graft_file() succeded, %s() invoking the real function.\n", function_name);
+				fprintf(stderr, "graft_file() succeded, %s() invoking the real function.\n", function_name);
 #endif
-	     /* If we are running as open(), we need to do some open()-specific preparation (see macro definition
-	      for more details): */
-	     
-	     DO_OPEN_SPECIFIC_PREPARATION();
-	     
-	     libtrash_fini(&cfg);
-	     RETURN_REAL_FUNCTION();
-	  }
-	
-	break;
-     }
-   /* (No return statement because all cases in the above switch-statement contain one.) */
-   
+				/* If we are running as open(), we need to do some open()-specific preparation (see macro definition
+				   for more details): */
+				DO_OPEN_SPECIFIC_PREPARATION();
+				libtrash_fini(&cfg);
+				RETURN_REAL_FUNCTION();
+			}
+			break;
+	}
+	/* (No return statement because all cases in the above switch-statement contain one.) */
 }
