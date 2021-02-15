@@ -17,19 +17,19 @@
  *
  */
 
-#include "trash.h"
-
 #define __USE_ATFILE 1 /* for access to AT_REMOVEDIR/AT_FDCWD macros inside fcntl.h */ 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
 
-#include <errno.h>
 #include <stdlib.h>
 #include <string.h>
+#include <errno.h>
 #include <sys/stat.h>
 #include <unistd.h>
 #include <fcntl.h>
+
+#include "trash.h"
 
 static int unlink_handle_error(const char *pathname, int (*real_unlink) (const char*),
 		int in_case_of_failure);
@@ -244,6 +244,7 @@ int unlink(const char *pathname)
 
 #ifdef AT_FUNCTIONS
 int unlinkat(int dirfd, const char *arg_pathname, int flags);
+
 int unlinkat(int dirfd, const char *arg_pathname, int flags)
 {
 	int retval = 0;

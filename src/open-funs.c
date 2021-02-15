@@ -70,21 +70,21 @@
 		       and the constant O_NOFOLLOW inside fcntl.h */
 #define __USE_ATFILE 1 /* for access to AT_REMOVEDIR/AT_FDCWD macros inside fcntl.h */
 
-#include "trash.h"
-
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
 
-#include <errno.h>
 #include <stdarg.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <errno.h>
 #include <unistd.h>
 #include <dlfcn.h>
 #include <fcntl.h>
+
+#include "trash.h"
 
 /* This is the return type of the "magic" function, do_fopen_or_freopen_or_open(): */
 

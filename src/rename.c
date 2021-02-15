@@ -17,15 +17,15 @@
  *
  */
 
-#include "trash.h"
-
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
 
-#include <errno.h>
 #include <stdlib.h>
+#include <errno.h>
 #include <sys/stat.h>
+
+#include "trash.h"
 
 static int rename_handle_error(const char *oldpath, const char *newpath,
 		int (*real_rename) (const char*, const char*), int in_case_of_failure);

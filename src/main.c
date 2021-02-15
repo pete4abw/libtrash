@@ -17,7 +17,6 @@
  *
  */
 
-#include "trash.h"
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -25,11 +24,13 @@
 
 #define _GNU_SOURCE
 
-#include <pwd.h>
 #include <stdlib.h>
 #include <string.h>
+#include <pwd.h>
 #include <unistd.h>
 #include <dlfcn.h>
+
+#include "trash.h"
 
 /* These are the buffers which hold the compile-time configuration defaults: */
 
