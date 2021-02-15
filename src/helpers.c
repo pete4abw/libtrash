@@ -17,26 +17,28 @@
  *
  */
 
-#include "trash.h"
-
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
 
 #define _GNU_SOURCE /* for access to canonicalize_file_name() inside stdlib.h */
+#define __USE_GNU 1 /* for access to get_current_dir_name() inside unistd.h
+		     * for access to dlvsym and RTLD_NEXT */
 #define __USE_ATFILE 1 /* for access to AT_REMOVEDIR/AT_FDCWD macros inside fcntl.h */
-
+#include <stdio.h>
+#include <stdarg.h>
+#include <stdlib.h>
+#include <string.h>
 #include <ctype.h>
 #include <errno.h>
 #include <pwd.h>
 #include <regex.h>
 #include <sys/stat.h>
-#include <stdarg.h>
-#include <stdlib.h>
-#include <string.h>
 #include <unistd.h>
-#include <dlfcn.h>
 #include <fcntl.h>
+#include <dlfcn.h>
+
+#include "trash.h"
 
 /* This file contains a series of helper functions, which the wrappers use. Their
  * definition is preceded by a short explanation of what they do. */
