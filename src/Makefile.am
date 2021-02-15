@@ -9,6 +9,6 @@ libtrash_la_SOURCES = \
 	unlink.c \
 	trash.h
 
-AM_CFLAGS=-Wall -W -Wmissing-prototypes -D_REENTRANT
+AM_CFLAGS=-nostartfiles -Wall -W -Wmissing-prototypes -D_REENTRANT
 
-libtrash_la_LDFLAGS = -module -release $(VERSION)
+libtrash_la_LDFLAGS = -release $(VERSION)

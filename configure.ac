@@ -1,5 +1,4 @@
-#                                               -*- Autoconf -*-
-# Process this file with autoconf to produce a configure script.
+# configure defaults
 
 m4_define([v_maj], [3])
 m4_define([v_min], [5])
@@ -30,9 +29,14 @@ AH_TEMPLATE([OPENAT_VERSION], [Holder for GLIBC Version])
 AH_TEMPLATE([OPENAT64_VERSION], [Holder for GLIBC Version])
 AH_TEMPLATE([RENAMEAT_VERSION], [Holder for GLIBC Version])
 AH_TEMPLATE([UNLINKAT_VERSION], [Holder for GLIBC Version])
+AH_TEMPLATE([AT_FUNCTIONS], [Holder for GLIBC AT Function #define])
 
 # Defaults for compilation
-# Constats YES, NO, and PROTECT are defined in trash.h
+# Constants YES, NO, PROTECT and ALLOW_DESTRUCTION
+AC_DEFINE([YES],[1],[Default for YES])
+AC_DEFINE([NO],[0],[Default for NO])
+AC_DEFINE([ALLOW_DESTRUCTION],[1],[Default for ALLOW_DESTRUCTION])
+AC_DEFINE([PROTECT],[0],[Default for PROTECT])
 AC_DEFINE([PERSONAL_CONF_FILE],".libtrash",[Personal Configuration File])
 AC_DEFINE([WARNING_STRING],"Remember that libtrash is disabled.",[Disabled Warning String])
 AC_DEFINE([INTERCEPT_UNLINK],[YES],[Trap unlink])
@@ -154,6 +158,7 @@ do
 	fi
 done
 if test x"$have_atfunctions" = xyes; then
+AC_DEFINE([AT_FUNCTIONS],[1])
 for TMPVAR in openat openat64 renameat unlinkat
 do
 	VERSIONVAR=$(grep -m1 $TMPVAR@ glibc_symbols | cut -d@ -f2)
