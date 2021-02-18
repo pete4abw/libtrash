@@ -2,8 +2,6 @@
 
 ## A shared library which implements a highly configurable "recycle bin" or "trash can" under GNU/Linux
 
-
-
 Written by Manuel Arriaga (marriaga@stern.nyu.edu).
 
 Copyright (C) 2001-2020 Manuel Arriaga
@@ -12,40 +10,6 @@ details.
 
 
 **Version 3.5 (2020/May)**
-
-
-## Quick start
-
-This file has grown hopelessly long and verbose over the last 19
-(ouch) years. Unless you are particularly curious about libtrash,
-consider jumping directly to the section 'Configuring, compiling, 
-installing and activating libtrash'.
-
-
-## Regarding Firefox, Chrome and other browsers based on their code:
-
-
-On several systems Mozilla Firefox, Google Chrome and browsers based
-on their code fail to start when libtrash is enabled. The easiest
-work-around is to disable libtrash for these browsers. Do so by
-starting Chrome with the command line "LD_PRELOAD= google-chrome" and
-Firefox with "LD_PRELOAD= firefox" (simply adjust the command
-accordingly for the other browsers). You can bind this command (if
-necessary by placing it in a one-line bash script file by itself) to
-whatever GUI icon or hotkey combination you use to start that browser.
-You may also modify your desktop file to include LD_PRELOAD= on the
-Exec= line. 
-
-
-## Requirements
-
-
-- (POSSIBLY) /proc filesystem: to run libtrash in most recent systems, you
-need to be running a kernel with support for the /proc file system
-(CONFIG_PROC_FS). Do not worry, since compilation will fail with a warning
-if this requirement applies to you and you don't have it enabled.
-
-- To *compile* libtrash, you need both Perl as well as Python.
 
 
 ## Description
@@ -74,12 +38,209 @@ The GNU libc functions which can be overriden/"wrapped" are
 You can individually enable / disable each of these "protections"; by
 default, only calls to the first two functions are intercepted.
 
+## Configuring, compiling, installing and activating libtrash
+
+### Configure
+
+`$ ./autogen.sh`
+`$ ./configure [--enable-debug]`
+
+The `--enable-debug` option should only be used by developers for testing.
+It will emit a lot of output each time an unlink call is made. Other config
+variables may be used for fine tuning installation, such as
+* --prefix (default is **/usr/local**
+* --libdir (default is **$(prefix)/lib**
+* --docdir (default is /usr/share/doc/libtrash)
+
+NOTE: If you want to install libtrash locally as a user, set 
+* --prefix=$HOME
+
+Type `./configure --help` for all configuration options available.
+
+### Compile
+`$ make`
+
+### System-wide Install
+As root, run
+
+`$ make install`
+
+For package maintainers, the DESTDIR variable may be used to place
+installation files in a different directory. e.g.
+
+`$ make DESTDIR=/tmp/package install` \
+which will install all files under **/tmp/package** for later installation.
+
+### User Local Install
+(only if **--prefix** has been set in configure (see above))
+
+`$ make install`
+
+If **--prefix** has not been set, use DESTDIR
+
+`$ make DESTDIR=$HOME install`
+
+### User configuration file libtrash.conf
+Default settings for libtrash can be overridden in the file
+**$HOME/.libtrash**. A template for this file with complete descriptions
+are in\
+**/usr/local/share/libtrash/libtrash.conf** or\
+**/usr/share/libtrash/libtrash.conf**
+
+To activate user settings, copy the template libtrash.conf file to\
+**$HOME/.libtrash**\
+and edit accordingly.
+
+## Activate libtrash
+
+So that calls to the different GNU libc functions are intercepted,
+you must ensure that it will be "preloaded" whenever a program is
+about to get started. This is achieved by configuring your shell so
+that the environment variable LD_PRELOAD is set to the path to the
+libtrash library.
+
+Assuming your system uses bash (the most popular shell on GNU/Linux
+systems), that can be done by placing the following line at very
+beginning ( <= IMPORTANT!) of both ~/.profile as well as ~/.bashrc:
+
+`export LD_PRELOAD=/usr/local/lib/libtrash.so`
+
+Additionally, if you have access to the root account on the computer,
+you probably want to make sure that you will also be covered by
+libtrash while using the root account. To do so, two more steps are
+necessary:
+
+1. In ~/.bashrc, append the following lines (anywhere in that file):
+
+    alias su="su -l"
+    alias sudo="sudo -i"
+
+2. Add the same "export LD_PRELOAD=..." line above to the very top (
+<= IMPORTANT) of both /root/.profile as well as /root/.bashrc. 
+
+[Note 1: at least on my current system, for libtrash to be active
+while you have sudoed into a root shell you must really place the export
+LD_PRELOAD line above AT THE VERY TOP of /root/.bashrc. The reason for
+that is a test that stops executing the instructions in that file for
+non-interactive shells.]
+
+[Note 2: the odds are that you don't need to export LD_PRELOAD on both
+~/.bashrc and ~/.profile, but your system's shell configuration and
+initialization process probably differs from mine and doing it twice
+won't hurt.]
+
+## Testing libtrash
+
+libtrash should now be set up and ready to spare you a lot of headaches. You
+can test drive it by doing the following (assuming that you didn't change
+TRASH_CAN to a string other than "Trash"):
+
+1. create a file called test_file
+2. Open test_file with a text editor, type a few characters and save it.
+3. or at a console prompt, type `echo test > test_file
+4. Run the following commands:
+```
+    $ rm test_file 
+    $ ls Trash/
+```
+test_file should now be stored in $HOME/Trash/. But don't be fooled by this
+example! libtrash isn't restricted to "saving" files which you explicitly
+deleted with "rm": it also works with your (graphical) file manager, mail
+user agent, etc...
+
+NOTE 1: Simply "touching" a test file -- ie, "touch test_file" -- and then
+removing it will no longer put it in the trash can, because libtrash now
+ignores empty files, since their removal doesn't present a risk of data
+loss.
+
+NOTE 2: To make sure that you are fully covered even when sudoing into other
+accounts, make sure you also test deleting a file using a command such
+as "sudo rm test_file". (Notice that libtrash won't work when sudoing
+unless you set the alias sudo="sudo -i" recommended above.)
+
+## Suspending, resuming and circumventing libtrash
+
+Should you need to temporarily disable libtrash, you can do so by running
+the command
+
+`   $ export TRASH_OFF=YES`
+
+When you are done, libtrash can be reactivated by typing:
+
+`   $ export TRASH_OFF=NO`
+
+You might make these operations simpler by appending the following two lines
+to the init file you used in step 5) above (if you are using Bash as your
+shell):
+```
+    alias trash_on="export TRASH_OFF=NO" 
+    alias trash_off="export TRASH_OFF=YES"
+```
+After doing so, you can enable/disable libtrash by typing 
+
+`    $ trash_on`
+
+or
+
+`    $ trash_off`
+
+at the prompt.
+
+If you often need to remove one or more files in a definitive way using
+'rm', you might wish to define
+
+`    alias hardrm="TRASH_OFF=YES rm"`
+
+After having done so,
+
+`    hardrm file.txt`
+
+will achieve the same effect as 
+
+`    TRASH_OFF=YES rm file.txt`
+
+NOTE: I strongly advise AGAINST defining such an alias, because you will
+probably get into the habit of always using it: at the time you delete a
+file, you are always sure that you won't need it again... :-) The habit of
+using that alias effectively makes installing libtrash useless. Unless you
+wish to effectively do away with the file due to privacy/confidentiality
+concerns, think instead of how cheap a gigabyte of HD space is! :-)
+
+If you have set the option SHOULD_WARN (see libtrash.conf), running a
+command while TRASH_OFF is set to "YES" will result in libtrash printing to
+stderr (at least) one reminder that it is currently disabled.
+
+## Detailed Description
+
+This file has grown hopelessly long and verbose over the last 19
+(ouch) years. Unless you are particularly curious about libtrash, users may
+skip this section.
+
+## Regarding Firefox, Chrome and other browsers based on their code:
+
+On several systems Mozilla Firefox, Google Chrome and browsers based
+on their code fail to start when libtrash is enabled. The easiest
+work-around is to disable libtrash for these browsers. Do so by
+starting Chrome with the command line "LD_PRELOAD= google-chrome" and
+Firefox with "LD_PRELOAD= firefox" (simply adjust the command
+accordingly for the other browsers). You can bind this command (if
+necessary by placing it in a one-line bash script file by itself) to
+whatever GUI icon or hotkey combination you use to start that browser.
+You may also modify your desktop file to include LD_PRELOAD= on the
+Exec= line. 
+
+## Requirements
+
+- (POSSIBLY) /proc filesystem: to run libtrash in most recent systems, you
+need to be running a kernel with support for the /proc file system
+(CONFIG_PROC_FS). Do not worry, since compilation will fail with a warning
+if this requirement applies to you and you don't have it enabled.
 
 ----------------------------------------------------------------------------
 
 **Some notes:**
 
-1- The wrappers of the "open functions" (fopen, freopen and
+1. The wrappers of the "open functions" (fopen, freopen and
 open) behave differently from the real functions in an important way when
 they are asked to open - in either write-mode or read-plus-write-mode - a
 file considered "worthy" of having a copy of itself stored in the trash can
@@ -92,7 +253,7 @@ directory which holds the file for them to succeed. Usually, you only have
 write-permission to files in directories to which you also have
 write-permission, so this shouldn't be a huge problem in most cases.
 
-2- When a file on a partition / filesystem other than the one
+2. When a file on a partition / filesystem other than the one
 in which your trash can resides is destroyed, libtrash can't just use the
 GNU libc function rename() to move it into your trash can: it must copy that
 file byte-after-byte into your trash can and then delete the original. To
@@ -102,7 +263,7 @@ files you can't read, hopefully that won't prove a big problem, either.
 However, be warned that copying a file (especially a large one) will take a
 lot longer than the time which would be required to simply rename it.
 
-3- If you are running a web (or other) server as user
+3. If you are running a web (or other) server as user
 'nobody', then you should ensure that libtrash is not active for that
 process. The issue is that by default libtrash refuses to remove files if
 it will not be able to save them in that user's trash can. The 'nobody'
@@ -113,9 +274,7 @@ operation fail. For that reason, always start servers run through the
 home dir) with libtrash disabled (just prefix "LD_PRELOAD= " to the command
 line). (My thanks to Nicola Fontana for pointing this out!)
 
-
 ----------------------------------------------------------------------------
-
 
 libtrash works with any GNU/Linux program, both at the console as well
 as in graphical windowing environments, and operates independently of
@@ -127,9 +286,7 @@ personal, user-specific configuration file.
 Although libtrash itself was written in C, the installation procedure
 requires both Perl and Python (sorry!).
 
-
 ## How libtrash works / features 
-
 
 libtrash recreates the directory structure of your home directory under the
 trash can, which means that, should you need to recover the mistakenly
@@ -140,26 +297,24 @@ dir (see libtrash.conf for details), they will be available under
 Trash/SYSTEM_ROOT. E.g.: after deletion by the user joe, /common-dir/doc.txt
 will be available at /home/joe/Trash/SYSTEM_ROOT/common-dir/doc.txt.
 
-
 When you try to delete a file in a certain directory where you had
 previously deleted another file with the same name, libtrash stores the new
 file with a different name, in order to preserve both files. E.g.:
-
-    $ touch test 
+```
+    $ echo test >test
     $ rm test 
     $ ls Trash/ test 
     $ touch test 
     $ rm test 
     $ ls Trash/ 
     test test[1] <-- The file we deleted first wasn't lost. 
+```
 
 libtrash keeps generating new names until no name collision occurs. The
 deletion of a file never causes the permanent loss of a previously "deleted"
 file.
 
-
 Temporary files can be automatically "ignored" and really destroyed.
-
 
 You can define whether you wish to allow the definitive removal of files
 already in your trash can while libtrash is active. Allowing this has one
@@ -178,7 +333,6 @@ cleanTrash, together with the license according to which it can be
 distributed and a short README file written by me, can be found under the
 directory "cleanTrash".
 
-
 You can also choose whether files outside of your home directory, hidden
 files (and files under hidden directories), backup and temporary files used
 by text editors and files on removable media should be handled normally or
@@ -191,19 +345,16 @@ the creation of copies of these in your trash can. By default, besides
 object files, TeX log and auxiliary files (".log" and ".aux", respectively)
 are also ignored.
 
-
 The user may also configure libtrash to print a warning message to stderr
 after each "dangerous" function call while libtrash is disabled. This
 feature is meant to remind the user that libtrash is disabled and that, for
 that reason, any deletions will be permanent. This feature is disabled by
 default, so that libtrash remains "invisible" to the user.
 
-
 Other options: name of trash can, name of TRASH_SYSTEM_ROOT under your trash
 can, whether to allow the destruction of the configuration file used by
 libtrash, and what to do in case of error. You can also set in your
 environment a list of exceptions to the list of unremovable directories.
-
 
 To configure libtrash so that it better suits your purposes you should edit
 the file libtrash.conf before compiling. Even if you won't be configuring
@@ -211,175 +362,9 @@ libtrash at compile-time, it is recommended that you at least read
 config.txt so that you know how libtrash handles its configuration files.
 
 
-
-## Configuring, compiling, installing and activating libtrash
-
-
-
-### Configure
-
-
-1 - Edit the file libtrash.conf. All options are (verbosely) explained
-there. If you want to learn about the different features libtrash offers,
-that is where you want to look; otherwise just check that the default
-settings look ok to you.
-
-
-### Compile
-
-2 - Run "make".
-
-
-
-### Install
-
-3- Edit the Makefile, possibly choosing alternative locations for the shared
-library and the system-wide, uneditable configuration file (defaults:
-/usr/local/lib and /etc/libtrash.conf, respectively).
-
-4- Run, as root, "make install".
-
-This installs libtrash in the directory specified at the top of the
-Makefile, runs ldconfig and puts a system-wide configuration file in
-/etc/libtrash.conf reflecting the compile-time defaults used. NEVER EDIT
-THIS FILE. USE A PERSONAL CONFIGURATION FILE INSTEAD. 
-
-[Note that you can also install libtrash on your home directory: just edit
-the top of the file src/Makefile and run 'make install' from your account.]
-
-5- Now go and read config.txt.
-
-
-
-### Activate libtrash
-
-6 - So that calls to the different GNU libc functions are intercepted,
-you must ensure that it will be "preloaded" whenever a program is
-about to get started. This is achieved by configuring your shell so
-that the environment variable LD_PRELOAD is set to the path to the
-libtrash library.
-
-Assuming your system uses bash (the most popular shell on GNU/Linux
-systems), that can be done by placing the following line at very
-beginning ( <= IMPORTANT!) of both ~/.profile as well as ~/.bashrc:
-
-    export LD_PRELOAD=/usr/local/lib/libtrash.so 
-
-Additionally, if you have access to the root account on the computer,
-you probably want to make sure that you will also be covered by
-libtrash while using the root account. To do so, two more steps are
-necessary:
-
-1) In ~/.bashrc, append the following lines (anywhere in that file):
-
-    alias su="su -l"
-    alias sudo="sudo -i"
-
-2) Add the same "export LD_PRELOAD=..." line above to the very top (
-<= IMPORTANT) of both /root/.profile as well as /root/.bashrc. 
-
-[Note 1: at least on my current system, for libtrash to be active
-while you have sudoed into a root shell you must really place the export
-LD_PRELOAD line above AT THE VERY TOP of /root/.bashrc. The reason for
-that is a test that stops executing the instructions in that file for
-non-interactive shells.]
-
-[Note 2: the odds are that you don't need to export LD_PRELOAD on both
-~/.bashrc and ~/.profile, but your system's shell configuration and
-initialization process probably differs from mine and doing it twice
-won't hurt.]
-
-
-## Testing libtrash
-
-
-
-libtrash should now be set up and ready to spare you a lot of headaches. You
-can test drive it by doing the following (assuming that you didn't change
-TRASH_CAN to a string other than "Trash"):
-
-1) Create a file called test_file
-2) Open test_file with a text editor, type a few characters and save it.
-3) Run the following commands:
-
-    $ rm test_file 
-    $ ls Trash/
-
-test_file should now be stored in Trash/. But don't be fooled by this
-example! libtrash isn't restricted to "saving" files which you explicitly
-deleted with "rm": it also works with your (graphical) file manager, mail
-user agent, etc...
-
-NOTE 1: Simply "touching" a test file -- ie, "touch test_file" -- and then
-removing it will no longer put it in the trash can, because libtrash now
-ignores empty files, since their removal doesn't present a risk of data
-loss.
-
-NOTE 2: To make sure that you are fully covered even when sudoing into other
-accounts, make sure you also test deleting a file using a command such
-as "sudo rm test_file". (Notice that libtrash won't work when sudoing
-unless you set the alias sudo="sudo -i" recommended above.)
-
-
-### Suspending, resuming and circumventing libtrash
-
-
-Should you need to temporarily disable libtrash, you can do so by running
-the command
-
-    $ export TRASH_OFF=YES
-
-When you are done, libtrash can be reactivated by typing:
-
-    $ export TRASH_OFF=NO
-
-You might make these operations simpler by appending the following two lines
-to the init file you used in step 5) above (if you are using Bash as your
-shell):
-
-    alias trash_on="export TRASH_OFF=NO" 
-    alias trash_off="export TRASH_OFF=YES"
-
-After doing so, you can enable/disable libtrash by typing 
-
-    $ trash_on
-
-or
-
-    $ trash_off
-
-at the prompt.
-
-If you often need to remove one or more files in a definitive way using
-'rm', you might wish to define
-
-    alias hardrm="TRASH_OFF=YES rm"
-
-After having done so,
-
-    hardrm file.txt
-
-will achieve the same effect as 
-
-    TRASH_OFF=YES rm file.txt
-
-NOTE: I strongly advise AGAINST defining such an alias, because you will
-probably get into the habit of always using it: at the time you delete a
-file, you are always sure that you won't need it again... :-) The habit of
-using that alias effectively makes installing libtrash useless. Unless you
-wish to effectively do away with the file due to privacy/confidentiality
-concerns, think instead of how cheap a gigabyte of HD space is! :-)
-
-If you have set the option SHOULD_WARN (see libtrash.conf), running a
-command while TRASH_OFF is set to "YES" will result in libtrash printing to
-stderr (at least) one reminder that it is currently disabled.
-
-
-
 ## Limitations
 
-
-1- As mentioned in the second note near the top of this document, destroying
+1. As mentioned in the second note near the top of this document, destroying
 documents in a partition different from the one on which your home directory
 resides will result in a byte-after-byte copy of those files into your trash
 can. If I could think of a faster, more efficient way of doing that I would
@@ -388,7 +373,7 @@ access permissions make this problem hard to solve. Unless someone suggests
 a good way to overcome this, this isn't going to change any time soon...
 Sorry!
 
-2- As mentioned in the section on how to activate libtrash, the
+2. As mentioned in the section on how to activate libtrash, the
 LD_PRELOAD method doesn't protect you from mistakes while using an
 account in which (for any reason) LD_PRELOAD isn't set and pointing to
 libtrash. If you 'su' or 'sudo' into other accounts, you should (i)
@@ -398,9 +383,7 @@ The only alternative is to activate libtrash from /etc/ld.so.preload,
 which I don't recommend since it can get in the way of important
 system updates.
 
-
 ## Contact
-
 
 This library was written by Manuel Arriaga. Feel free to contact me at
 marriaga@stern.nyu.edu with questions, suggestions, bug reports or
@@ -408,9 +391,7 @@ just a short note saying how libtrash helped you or your organization
 deploy GNU/Linux in a context where some "user friendliness" in
 handling file deletions is required.
 
-
 ## Credits
-
 
 - Avery Pennarun, whose "freestyle-concept" tarball showed me how to
 intercept function calls and write a suitable Makefile.
