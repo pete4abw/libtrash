@@ -2,9 +2,11 @@
 
 m4_define([v_maj], [3])
 m4_define([v_min], [5])
+m4_define([v_mic], [0])
 
 ## AC_PREREQ([2.69])
-AC_INIT([libtrash], [v_maj.v_min], [pete@peterhyman.com])
+AC_INIT([libtrash], [v_maj.v_min.v_mic], [marriaga@stern.nyu.edu or pete@peterhyman.com],[],
+	[http://pages.stern.nyu.edu/~marriaga/software/libtrash/])
 AM_INIT_AUTOMAKE([-Wall -Werror foreign])
 AM_PROG_AR
 AC_CONFIG_SRCDIR([src/main.c])
