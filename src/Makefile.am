@@ -11,4 +11,4 @@ libtrash_la_SOURCES = \
 
 AM_CFLAGS=-nostartfiles -Wall -W -Wmissing-prototypes -D_REENTRANT
 
-libtrash_la_LDFLAGS = -version-number ${VERSION//./:}
+libtrash_la_LDFLAGS = -version-number $(LT_VER)

@@ -16,6 +16,9 @@ AC_CONFIG_MACRO_DIRS([m4])
 AC_DISABLE_STATIC
 LT_INIT
 
+# for linking
+AC_SUBST([LT_VER], [v_maj:v_min:v_mic])
+
 # Defines for libtrash (needed because defines are set programmatically)
 AH_TEMPLATE([CREAT_VERSION], [Holder for GLIBC Version])
 AH_TEMPLATE([CREAT64_VERSION], [Holder for GLIBC Version])
