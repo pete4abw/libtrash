@@ -486,3 +486,18 @@ This parameter can only be set in the run-time libtrash configuration
 file in your home directory. (Thanks to Peter Hyman for sending me a
 patch.)
 
+Change 3.5 -> 3.6 (2020/Aug)
+
+- Modified the get_symbol_versions.py build script to correctly handle
+long symbol names. (Thanks to Kamil Dudka for submitting a fix!)
+
+
+Change 3.6 -> 3.7 (2021/Feb)
+
+- Thanks to Peter Hyman libtrash now builds using autotools (no more
+clunky build scripts, yay!).
+
+
+
+
+

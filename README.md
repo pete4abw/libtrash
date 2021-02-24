@@ -9,7 +9,7 @@ Licensed under the GNU General Public License version 2. See the file COPYING fo
 details.
 
 
-**Version 3.5 (2020/May)**
+**Version 3.7 (2021/Feb)**
 
 
 ## Description
@@ -39,6 +39,9 @@ You can individually enable / disable each of these "protections"; by
 default, only calls to the first two functions are intercepted.
 
 ## Configuring, compiling, installing and activating libtrash
+
+The INSTALL file contains summarized installation instructions that
+most users can follow.
 
 ### Configure
 
@@ -465,3 +468,6 @@ with oddly restrictive permissions when libtrash was being used.
 - Peter Hyman for submitting a patch adding PRESERVE_FILES_LARGER_THAN
 functionality.
 
+- Peter Hyman for single-handedly bringing libtrash to the 21st (20th?
+:-) ) century by replacing the whole clunky build system with autotools
+magic.
