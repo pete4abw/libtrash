@@ -21,6 +21,8 @@ MAINTAINERCLEANFILES = \
 	m4/ltsugar.m4 \
 	m4/ltversion.m4
 
+DISTCLEANFILES = glibc_symbols
+
 SUBDIRS = src
 
 dist_doc_DATA = \
@@ -33,5 +35,4 @@ dist_doc_DATA = \
 	README.md \
 	TODO
 
-libtrashdir = $(datadir)/libtrash
-libtrash_DATA = libtrash.conf
+dist_sysconf_DATA = libtrash.conf
