@@ -1,12 +1,11 @@
 # configure defaults
 
 m4_define([v_maj], [3])
-m4_define([v_min], [7])
+m4_define([v_min], [8])
 m4_define([v_mic], [0])
 
-## AC_PREREQ([2.69])
-AC_INIT([libtrash], [v_maj.v_min.v_mic], [marriaga@stern.nyu.edu or pete@peterhyman.com],[],
-	[http://pages.stern.nyu.edu/~marriaga/software/libtrash/])
+## AC_PREREQ([2.71])
+AC_INIT([libtrash],[v_maj.v_min.v_mic],[marriaga@stern.nyu.edu or pete@peterhyman.com],[],[http://pages.stern.nyu.edu/~marriaga/software/libtrash/])
 AM_INIT_AUTOMAKE([-Wall -Werror foreign])
 AM_PROG_AR
 AC_CONFIG_SRCDIR([src/main.c])
@@ -70,7 +69,7 @@ AC_DEFINE([IGNORE_RE],"",[Ignore Regex])
 # Debug?
 AC_ARG_ENABLE(
 	debug,
-	[AC_HELP_STRING([--enable-debug],[Enable Debug Messages @<:@default=no@:>@])],
+	[AS_HELP_STRING([--enable-debug],[Enable Debug Messages @<:@default=no@:>@])],
 	debug=$enableval
        )
 if test x"$debug" = xyes; then
@@ -122,13 +121,11 @@ else
 fi
 
 AC_MSG_NOTICE([Getting GLIBC Versions for libtrash functions])
-AC_TRY_LINK(
-[/* test program */
+AC_LINK_IFELSE([AC_LANG_PROGRAM([[/* test program */
 #define _GNU_SOURCE
 #include <stdio.h>
 #include <fcntl.h>
-#include <unistd.h>],
-[fopen("", "r");
+#include <unistd.h>]], [[fopen("", "r");
 fopen64("", "r");
 freopen("", "r", NULL);
 freopen64("", "r", NULL);
@@ -143,11 +140,9 @@ unlinkat(0, "", 0);
 renameat(0, "", 0, "");
 openat(0, "", 0);
 openat64(0, "", 0);
-#endif],
-[AC_MSG_RESULT([Linking Test Program: Success]);
+#endif]])],[AC_MSG_RESULT([Linking Test Program: Success]);
 readelf -W --dyn-syms conftest > glibc_symbols;
-sed -i -e 's/ (.*)//' glibc_symbols],
-[AC_MSG_FAILURE([Link Test Program: Failure])])
+sed -i -e 's/ (.*)//' glibc_symbols],[AC_MSG_FAILURE([Link Test Program: Failure])])
 
 AC_MSG_NOTICE([Assigning GLIBC Versions to libtrash functions])
 # Read in glibc_symbols and define
@@ -180,7 +175,8 @@ fi
 # All pre processing done
 
 AC_CONFIG_FILES([Makefile
-                 src/Makefile])
+                 src/Makefile
+		 man/Makefile])
 AC_OUTPUT
 
 # Show what we have

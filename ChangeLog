@@ -498,6 +498,15 @@ Change 3.6 -> 3.7 (2021/Feb)
 clunky build scripts, yay!).
 
 
+Change 3.7 -> 3.8 (2024/Jan)
+
+- Thanks to Florian Weimer, libtrash now compiles with GCC v14.
+
+
+
+
+
+
 
 
 

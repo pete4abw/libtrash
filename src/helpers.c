@@ -47,7 +47,7 @@
 
 /* There isn't any need to export these functions (they are mere "helper helper functions" :-) ): */
 
-static char** read_config_from_file(const char *conf_file, int number_of_keys, config *cfg, ...);
+static char** read_config_from_file(char *conf_file, int number_of_keys, config *cfg, ...);
 
 static char *readline(FILE* stream, int *errors);
 
@@ -59,7 +59,7 @@ static int is_an_exception(const char *path, const char *exceptions);
 
 static int is_empty_file(const char *path);
 
-static int file_is_too_large(const char *path, unsigned long long preserve_files_larger_than_limit);
+static int file_is_too_large(const char *path, off_t preserve_files_larger_than_limit);
 
 static int matches_re(const char *path, const char *regexp);
 
@@ -966,7 +966,7 @@ int ends_in_ignored_extension(const char *filename, config *cfg)
  * handling such situations is something better left to the caller), a NULL
  * pointer is returned. */
 
-static char** read_config_from_file(const char *filepath, int number_of_keys, config *cfg, ...)
+static char** read_config_from_file(char *filepath, int number_of_keys, config *cfg, ...)
 {
 
 	FILE *conf_file = NULL;
@@ -1568,7 +1568,7 @@ void get_config_from_file(config *cfg)
 
 	if (config_values[22])
 	{
-		unsigned long long preserve_files_larger_than_limit = 0;
+		off_t preserve_files_larger_than_limit = 0;
 
 		int len_of_string = strlen(config_values[22]);
 
@@ -2103,7 +2103,7 @@ static int is_empty_file(const char *path)
  * we succeeded in determining that the file is smaller than that limit).
  */
 
-static int file_is_too_large(const char *path, unsigned long long preserve_files_larger_than_limit)
+static int file_is_too_large(const char *path, off_t preserve_files_larger_than_limit)
 {
 	struct stat file_stat;
 	int retval;

@@ -75,13 +75,10 @@ int unlink(const char *pathname)
 	/* If libtrash_off is set to true or intercept_unlink set to false, the user has asked us to become temporarily inactive an let the real
 	 * unlink() perform its task.
 	 * Alternatively, if we were passed a NULL pointer we also call the real unlink: */
-	if (cfg.libtrash_off || !cfg.intercept_unlink || pathname == NULL)
+	if (cfg.libtrash_off || !cfg.intercept_unlink)
 	{
 #ifdef DEBUG
-		if (!pathname)
-			fprintf(stderr, "unlink was passed a NULL pointer, calling real unlink.\n");
-		else
-			fprintf(stderr, "Passing request to unlink %s to the real unlink because libtrash_off = true or intercept_unlink = false.\n", pathname);
+		fprintf(stderr, "Passing request to unlink %s to the real unlink because libtrash_off = true or intercept_unlink = false.\n", pathname);
 #endif
 		libtrash_fini(&cfg);
 		return (*cfg.real_unlink) (pathname); /* real unlink() sets errno */

@@ -9,7 +9,7 @@ Licensed under the GNU General Public License version 2. See the file COPYING fo
 details.
 
 
-**Version 3.7 (2021/Feb)**
+**Version 3.8 (2024/Jan)**
 
 
 ## Description

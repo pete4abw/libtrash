@@ -1,0 +1,46 @@
+.TH libtrash 2 2020-07 "Linux" "Linux Programmer's Manual"
+.SH NAME
+libtrash - Linux Trash Can
+.SH SYNOPSYS
+libtrash is a preloaded library that intercepts system
+.BR unlink (2)
+command and moves a deleted file to a designated trashcan.
+.SH DESCRIPTION
+Description comes here.
+.SH OPTIONS
+libtrash is configured using a user config file that controls how to-be-removed files are handled.
+.SH EXIT STATUS
+If there is an error in removing the file, a system error will be reported.
+.SH RETURN VALUE
+libtrash is preloaded and is not called directly by a user program. If
+.BR unlink (2)
+returns an error, it is displayed.
+.SH ERRORS
+libtrash will return an error if a file cannot or should not be removed.
+.SH ENVIRONMENT
+.BR LD_PRELOAD =
+.I library path
+.B libtrash.so
+.TP
+.BR TRASH_OFF =
+.B YES|NO
+.TP
+prepending a
+.BR rm (1) or
+.BR mv (1)
+command with
+.B TRASH_OFF=YES
+will disable trash can functionality
+location of the libtrash library.
+.SH FILES
+.SH VERSIONS
+.SH NOTES
+.SH BUGS
+.SH EXAMPLES
+.SH AUTHORS
+.SH SEE ALSO
+.BR rm (1)
+.BR mv (1)
+.BR unlink (2)
+.BR libtrash.conf (5)
+

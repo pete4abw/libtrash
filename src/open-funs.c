@@ -75,6 +75,7 @@
 #endif
 
 #include <stdarg.h>
+#include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
@@ -330,10 +331,10 @@ int openat64(int dirfd, const char *arg_pathname, int flags, ...)
 	  (function == FREOPEN ? (*real_freopen) (path, mode_str, stream) :			\
 	   (function == FREOPEN64 ? (*real_freopen64) (path, mode_str, stream) :		\
 	    (function == OPEN ?									\
-	     ( (flags & O_CREAT || flags & O_TMPFILE) ? (*real_open) (path, flags, mode) :	\
-	       (*real_open) (path, flags) ) :							\
-	       ( (flags & O_CREAT || flags & O_TMPFILE) ? (*real_open64) (path, flags, mode) :	\
-		 (*real_open64) (path, flags) ) ) ) ) ) )
+	     ( (flags & O_CREAT || flags & O_TMPFILE) ? (FILE *) (intptr_t) (*real_open) (path, flags, mode) :	\
+	       (FILE *) (intptr_t) (*real_open) (path, flags) ) :							\
+	       ( (flags & O_CREAT || flags & O_TMPFILE) ? (FILE *) (intptr_t) (*real_open64) (path, flags, mode) :	\
+		 (FILE *) (intptr_t) (*real_open64) (path, flags) ) ) ) ) ) )
 
 /* ------------------------------------------------------------------------------------- */
 
@@ -347,7 +348,7 @@ int openat64(int dirfd, const char *arg_pathname, int flags, ...)
 			function == FOPEN64 || function == FREOPEN64)	\
 		retval.fp = REAL_FUNCTION();				\
 	else /* if (function == OPEN || function == OPEN64) */		\
-		retval.fd = REAL_FUNCTION();				\
+		retval.fd = (intptr_t) REAL_FUNCTION();			\
 	return retval;							\
 }
 
