@@ -1,0 +1,81 @@
+Manueal Arriaga 
+
+Thanks to the following for their contributions.
+
+- Avery Pennarun, whose "freestyle-concept" tarball showed me how to
+intercept function calls and write a suitable Makefile.
+
+- Phil Howard and wwp for pointing out problems with the (abandoned) hardrm
+script. wwp also offered general advice.
+
+- Karl Pitrich for letting me know about a bug in the calls to mkdir() and
+chmod() in the code of dir_ok() which rendered the trash can (and all
+subdirs) unbrowsable if you didn't manually correct their permissions with
+'chmod'.
+
+- Daniel Sadilek for letting me know that some people _did_ need
+inter-device support :), the helpful cleanTrash Perl script and help testing
+libtrash-0.6.
+
+- Ross Skaliotis for helping me pin down the cause of the incompatibility
+between libtrash and Samba.
+
+- Christoph Dworzak for reporting poor handling of special files, and
+providing a patch.
+
+- Martin Corley for the alternative cleanTrash script.
+
+- Frederic Connes for reporting a bug affecting the creation of replacement
+files when open()/open64() are being intercepted and suggesting the use of
+different names for 5 configuration variables. Frederic also provided two
+patches against the Makefile and cleanTrash script.
+
+- Dan Stutzbach for reporting a bug in the function readline(), sending a
+patch and helping me fix it.
+
+- Ryan Brown for reporting a memory leak.
+
+- BBBart for reporting a bug in the handling of files with names starting
+with multiple dots.
+
+- Jacek Sliwerski (rzyjontko) for adding the IGNORE_RE feature to libtrash and
+making the search for new filenames [in reformulate_new_path()] much faster.
+
+- Robert Storey for reporting an error in the documentation.
+
+- Raik Lieske for reporting a bug in the handling of certain file paths.
+
+- David Benbennick for reporting mishandling of function calls with a NULL
+pathname.
+
+- Jorgen Schaefer for helping me figure out why glibc was crashing when
+libtrash was active and getwc() was called.
+
+- Philipp Woelfel for alerting me to lacking coverage of the *at() functions
+and allowing me access to his system to find out what was going on. Also,
+Philipp spotted the "unresolved symbol" bug in 2.7.
+
+- Nicola Fontana for pointing out the problem with servers running as
+'nobody'.
+
+- Peter Hyman for pointing out that the default value of
+REMOVABLE_MEDIA_MOUNT_POINTS was outdated.
+
+- Kamil Dudka for sending me a patch renaming the _init/_fini
+functions to avoid symbol clashes when using Audacious plugins.
+
+- Peter Hyman (again :) ) for letting me know that Google Chrome (and
+not just some versions of Firefox) also need to be launched with
+'LD_PRELOAD='.
+
+- Felix Becker for informing me about Kate, Lyx and tar creating files
+with oddly restrictive permissions when libtrash was being used.
+
+- Peter Hyman for submitting a patch adding PRESERVE_FILES_LARGER_THAN
+functionality.
+
+- Peter Hyman for single-handedly bringing libtrash to the 21st (20th?
+:-) ) century by replacing the whole clunky build system with autotools
+magic.
+
+- Florian Weimer for patch that allows libtrash to compile with gcc v14.

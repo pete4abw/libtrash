@@ -8,9 +8,11 @@ Copyright (C) 2001-2020 Manuel Arriaga
 Licensed under the GNU General Public License version 2. See the file COPYING for
 details.
 
+**NOTE:** As of January 2024, Manuel has handed over the project to Peter Hyman
+(pete@peterhyman.com), and the `libtrash` project will be managed on Github
+https://github.com/pete4abw/libtrash .
 
 **Version 3.8 (2024/Jan)**
-
 
 ## Description
 
@@ -53,9 +55,10 @@ It will emit a lot of output each time an unlink call is made. Other config
 variables may be used for fine tuning installation, such as
 * --prefix (default is **/usr/local**
 * --libdir (default is **$(prefix)/lib**
-* --docdir (default is /usr/share/doc/libtrash)
+* --docdir (default is **$(prefix)/share/doc/libtrash)
+* --mandir (default is **$(prefix)/share/man)
 
-NOTE: If you want to install libtrash locally as a user, set 
+NOTE: If you want to install libtrash locally as a user, set
 * --prefix=$HOME
 
 Type `./configure --help` for all configuration options available.
@@ -119,7 +122,7 @@ necessary:
     alias sudo="sudo -i"
 
 2. Add the same "export LD_PRELOAD=..." line above to the very top (
-<= IMPORTANT) of both /root/.profile as well as /root/.bashrc. 
+<= IMPORTANT) of both /root/.profile as well as /root/.bashrc.
 
 [Note 1: at least on my current system, for libtrash to be active
 while you have sudoed into a root shell you must really place the export
@@ -143,7 +146,7 @@ TRASH_CAN to a string other than "Trash"):
 3. or at a console prompt, type `echo test > test_file
 4. Run the following commands:
 ```
-    $ rm test_file 
+    $ rm test_file
     $ ls Trash/
 ```
 test_file should now be stored in $HOME/Trash/. But don't be fooled by this
@@ -176,10 +179,10 @@ You might make these operations simpler by appending the following two lines
 to the init file you used in step 5) above (if you are using Bash as your
 shell):
 ```
-    alias trash_on="export TRASH_OFF=NO" 
+    alias trash_on="export TRASH_OFF=NO"
     alias trash_off="export TRASH_OFF=YES"
 ```
-After doing so, you can enable/disable libtrash by typing 
+After doing so, you can enable/disable libtrash by typing
 
 `    $ trash_on`
 
@@ -198,7 +201,7 @@ After having done so,
 
 `    hardrm file.txt`
 
-will achieve the same effect as 
+will achieve the same effect as
 
 `    TRASH_OFF=YES rm file.txt`
 
@@ -230,7 +233,7 @@ accordingly for the other browsers). You can bind this command (if
 necessary by placing it in a one-line bash script file by itself) to
 whatever GUI icon or hotkey combination you use to start that browser.
 You may also modify your desktop file to include LD_PRELOAD= on the
-Exec= line. 
+Exec= line.
 
 ## Requirements
 
@@ -289,7 +292,7 @@ personal, user-specific configuration file.
 Although libtrash itself was written in C, the installation procedure
 requires both Perl and Python (sorry!).
 
-## How libtrash works / features 
+## How libtrash works / features
 
 libtrash recreates the directory structure of your home directory under the
 trash can, which means that, should you need to recover the mistakenly
@@ -305,12 +308,12 @@ previously deleted another file with the same name, libtrash stores the new
 file with a different name, in order to preserve both files. E.g.:
 ```
     $ echo test >test
-    $ rm test 
-    $ ls Trash/ test 
-    $ touch test 
-    $ rm test 
-    $ ls Trash/ 
-    test test[1] <-- The file we deleted first wasn't lost. 
+    $ rm test
+    $ ls Trash/ test
+    $ touch test
+    $ rm test
+    $ ls Trash/
+    test test[1] <-- The file we deleted first wasn't lost.
 ```
 
 libtrash keeps generating new names until no name collision occurs. The
@@ -325,13 +328,13 @@ major disadvantage, which is explained in libtrash.conf. But, on the other
 hand, if you don't allow the destruction of files already in your trash can,
 when you need to recover HD space by permanently removing files currently
 found in your trash can you will have to temporarily disable libtrash first
-(instructions on how to achieve this can be found below). 
+(instructions on how to achieve this can be found below).
 
 To avoid the accumulation of useless files in your users' trash cans, it is
 probably wise to run the script cleanTrash regularly (perhaps from a cron
 job). This Perl script was kindly provided by Daniel Sadilek and works by
 removing the oldest files from each trash can in your system whenever that
-trash can grows beyond a certain disk size. It is meant to be run by root. 
+trash can grows beyond a certain disk size. It is meant to be run by root.
 cleanTrash, together with the license according to which it can be
 distributed and a short README file written by me, can be found under the
 directory "cleanTrash".
@@ -393,81 +396,3 @@ marriaga@stern.nyu.edu with questions, suggestions, bug reports or
 just a short note saying how libtrash helped you or your organization
 deploy GNU/Linux in a context where some "user friendliness" in
 handling file deletions is required.
-
-## Credits
-
-- Avery Pennarun, whose "freestyle-concept" tarball showed me how to
-intercept function calls and write a suitable Makefile.
-
-- Phil Howard and wwp for pointing out problems with the (abandoned) hardrm
-script. wwp also offered general advice.
-
-- Karl Pitrich for letting me know about a bug in the calls to mkdir() and
-chmod() in the code of dir_ok() which rendered the trash can (and all
-subdirs) unbrowsable if you didn't manually correct their permissions with
-'chmod'.
-
-- Daniel Sadilek for letting me know that some people _did_ need
-inter-device support :), the helpful cleanTrash Perl script and help testing
-libtrash-0.6.
-
-- Ross Skaliotis for helping me pin down the cause of the incompatibility
-between libtrash and Samba.
-
-- Christoph Dworzak for reporting poor handling of special files, and
-providing a patch.
-
-- Martin Corley for the alternative cleanTrash script.
-
-- Frederic Connes for reporting a bug affecting the creation of replacement
-files when open()/open64() are being intercepted and suggesting the use of
-different names for 5 configuration variables. Frederic also provided two
-patches against the Makefile and cleanTrash script.
-
-- Dan Stutzbach for reporting a bug in the function readline(), sending a
-patch and helping me fix it.
-
-- Ryan Brown for reporting a memory leak.
-
-- BBBart for reporting a bug in the handling of files with names starting
-with multiple dots.
-
-- Jacek Sliwerski (rzyjontko) for adding the IGNORE_RE feature to libtrash and
-making the search for new filenames [in reformulate_new_path()] much faster.
-
-- Robert Storey for reporting an error in the documentation.
-
-- Raik Lieske for reporting a bug in the handling of certain file paths.
-
-- David Benbennick for reporting mishandling of function calls with a NULL
-pathname.
-
-- Jorgen Schaefer for helping me figure out why glibc was crashing when
-libtrash was active and getwc() was called.
-
-- Philipp Woelfel for alerting me to lacking coverage of the *at() functions
-and allowing me access to his system to find out what was going on. Also,
-Philipp spotted the "unresolved symbol" bug in 2.7.
-
-- Nicola Fontana for pointing out the problem with servers running as
-'nobody'.
-
-- Peter Hyman for pointing out that the default value of
-REMOVABLE_MEDIA_MOUNT_POINTS was outdated.
-
-- Kamil Dudka for sending me a patch renaming the _init/_fini
-functions to avoid symbol clashes when using Audacious plugins.
-
-- Peter Hyman (again :) ) for letting me know that Google Chrome (and
-not just some versions of Firefox) also need to be launched with
-'LD_PRELOAD='.
-
-- Felix Becker for informing me about Kate, Lyx and tar creating files
-with oddly restrictive permissions when libtrash was being used.
-
-- Peter Hyman for submitting a patch adding PRESERVE_FILES_LARGER_THAN
-functionality.
-
-- Peter Hyman for single-handedly bringing libtrash to the 21st (20th?
-:-) ) century by replacing the whole clunky build system with autotools
-magic.

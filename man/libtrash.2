@@ -1,4 +1,4 @@
-.TH libtrash 2 2020-07 "Linux" "Linux Programmer's Manual"
+.TH libtrash 2 2024-01 "Linux" "Linux Programmer's Manual"
 .SH NAME
 libtrash - Linux Trash Can
 .SH SYNOPSYS
@@ -6,41 +6,44 @@ libtrash is a preloaded library that intercepts system
 .BR unlink (2)
 command and moves a deleted file to a designated trashcan.
 .SH DESCRIPTION
-Description comes here.
+libtrash is a shared library which, when preloaded, will intercept calls to
+a series of GNU libc functions and make sure that, if an attempt to destroy
+certain files is made, these won't be permanently destroyed but rather moved
+to a "trash can".  It also allows the user to mark certain directories as
+"unremovable", which means that calls to functions which would result in the
+loss of files under these directories will always fail, leaving those files
+untouched in their original locations.
 .SH OPTIONS
 libtrash is configured using a user config file that controls how to-be-removed files are handled.
 .SH EXIT STATUS
 If there is an error in removing the file, a system error will be reported.
 .SH RETURN VALUE
-libtrash is preloaded and is not called directly by a user program. If
-.BR unlink (2)
-returns an error, it is displayed.
+libtrash is preloaded and is not called directly by a user program. If unlink (2) returns an error, it is displayed.
 .SH ERRORS
 libtrash will return an error if a file cannot or should not be removed.
 .SH ENVIRONMENT
-.BR LD_PRELOAD =
-.I library path
-.B libtrash.so
-.TP
-.BR TRASH_OFF =
-.B YES|NO
-.TP
-prepending a
-.BR rm (1) or
-.BR mv (1)
-command with
-.B TRASH_OFF=YES
-will disable trash can functionality
-location of the libtrash library.
+LD_PRELOAD = "library path/\fBlibtrash.so\fR"
+.br
+TRASH_OFF = "\fBYES\fR|\fBNO\fR"
+.br
+prepending a \fBrm\fR or \fBmv\fR command with \fBTRASH_OFF=YES\fR will disable trash can functionality.
 .SH FILES
-.SH VERSIONS
-.SH NOTES
-.SH BUGS
-.SH EXAMPLES
+.IP \fB/etc/libtrash.conf\fR
+This file is an annotated version with all options explained.
+.IP \fB$HOME/.libtrash.conf\fR
+This is a user created configuration file.
+". .SH VERSIONS
+". .SH NOTES
+". .SH BUGS
+". .SH EXAMPLES
 .SH AUTHORS
+Manuel Arriaga - 2002 through 2024/01
+.br
+Peter Hyman - 2024/01 through...
+.br
+Other contributors over the years are listed in the doc/libtrash directory
 .SH SEE ALSO
-.BR rm (1)
-.BR mv (1)
-.BR unlink (2)
+.BR rm (1),
+.BR mv (1),
+.BR unlink (2),
 .BR libtrash.conf (5)
-

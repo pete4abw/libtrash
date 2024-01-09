@@ -1,3 +1,19 @@
+This file is obsolete as of January 2024
+
+Please refer to the git log for updates.
+
+Thanks to Manuel Arriaga for all his work for over 20 years on this
+project.
+
+As of January 2024, I will be managing this application. Mostly resolving
+any bugs, keeping it up to date as needed.
+
+Peter Hyman
+pete@peterhyman.com
+January 2024
+
+==========================================================================
+
 I consider libtrash pretty much "stable", in the sense that I don't have any
 immediate plans of adding new features and that I don't know of any bugs. Of
 course, if any problem, bug or misbehaviour is either reported or detected
@@ -501,12 +517,3 @@ clunky build scripts, yay!).
 Change 3.7 -> 3.8 (2024/Jan)
 
 - Thanks to Florian Weimer, libtrash now compiles with GCC v14.
-
-
-
-
-
-
-
-
-
