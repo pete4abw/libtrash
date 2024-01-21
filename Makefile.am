@@ -31,6 +31,7 @@ dist_doc_DATA = \
 	INSTALL \
 	NEWS \
 	README.md \
+	TLDR.md \
 	TODO
 
 dist_sysconf_DATA = libtrash.conf
