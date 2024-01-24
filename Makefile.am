@@ -25,7 +25,6 @@ SUBDIRS = src man
 
 dist_doc_DATA = \
 	AUTHORS \
-	BUILD \
 	ChangeLog \
 	config.txt \
 	INSTALL \
