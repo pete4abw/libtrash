@@ -2215,7 +2215,7 @@ char* make_absolute_path_from_dirfd_relpath(int dirfd, const char *arg_pathname)
 	}
 	else if (arg_pathname[0] == '/' || dirfd == AT_FDCWD)
 	{
-		return arg_pathname;
+		return (char *) arg_pathname;
 	}
 	else if (dirfd < 0)
 	{

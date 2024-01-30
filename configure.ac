@@ -1,7 +1,7 @@
 # configure defaults
 
 m4_define([v_maj], [3])
-m4_define([v_min], [8])
+m4_define([v_min], [9])
 m4_define([v_mic], [0])
 
 ## AC_PREREQ([2.71])
