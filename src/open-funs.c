@@ -292,16 +292,16 @@ FdOrFp return_real_function(int function, const char *path, mode_t mode, char *m
 	else if (function == OPEN)
 	{
 		if (flags & O_CREAT || flags & O_TMPFILE)
-			retval.fd = (intptr_t) (*real_open) (path, flags, mode);
+			retval.fd = (*real_open) (path, flags, mode);
 		else
-			retval.fd = (intptr_t) (*real_open) (path, flags);
+			retval.fd = (*real_open) (path, flags);
 	}
 	else if (function == OPEN64)
 	{
 		if (flags & O_CREAT || flags & O_TMPFILE)
-			retval.fd = (intptr_t) (*real_open64) (path, flags, mode);
+			retval.fd = (*real_open64) (path, flags, mode);
 		else
-			retval.fd = (intptr_t) (*real_open64) (path, flags);
+			retval.fd = (*real_open64) (path, flags);
 	}
 	return retval;
 }
@@ -363,8 +363,8 @@ static FdOrFp do_fopen_or_freopen_or_open(int function, const char *path, ...)
 		error = 1;
 
 	if (error) {
+		return_value = return_function_error(function);
 		errno = 0;
-		return_value = return_function_error(0);
 		goto done;
 	}
 	/* Get the missing arguments and store them in the above mentioned variables: */
@@ -441,8 +441,10 @@ static FdOrFp do_fopen_or_freopen_or_open(int function, const char *path, ...)
 		libtrash_fini(&cfg);
 		if(cfg.in_case_of_failure == ALLOW_DESTRUCTION)
 			return_value = return_real_function(function, path, mode, mode_str, flags, stream);
-		else /* if (cfg.in_case_of_failure == PROTECT) */
-			return_value = return_function_error(0);
+		else {	/* if (cfg.in_case_of_failure == PROTECT) */
+			return_value = return_function_error(function);
+			errno = 0;
+		}
 		goto done;
 	}
 	/* Does this file already exist? If it doesn't (or if path is the path to a directory, or to a symlink and we
@@ -489,8 +491,10 @@ static FdOrFp do_fopen_or_freopen_or_open(int function, const char *path, ...)
 		libtrash_fini(&cfg);
 		if(cfg.in_case_of_failure == ALLOW_DESTRUCTION)
 			return_value = return_real_function(function, path, mode, mode_str, flags, stream);
-		else /* if (cfg.in_case_of_failure == PROTECT) */
-			return_value = return_function_error(0);
+		else {	/* if (cfg.in_case_of_failure == PROTECT) */
+			return_value = return_function_error(function);
+			errno = 0;
+		}
 		goto done;
 	}
 
@@ -521,7 +525,8 @@ static FdOrFp do_fopen_or_freopen_or_open(int function, const char *path, ...)
 #endif
 			free(absolute_path);
 			libtrash_fini(&cfg);
-			return_value = return_function_error(EACCES); /* setting errno to EACCES so that the caller interprets this error as being due to "insufficient permissions" */
+			return_value = return_function_error(function); /* setting errno to EACCES so that the caller interprets this error as being due to "insufficient permissions" */
+			errno = EACCES;
 			break;
 		case BE_SAVED: /* move file into trash can (with graft_file()), free memory and either invoke real function or error */
 			/* handler, deciding what to do according to the return value of graft_file(): */
@@ -543,8 +548,10 @@ static FdOrFp do_fopen_or_freopen_or_open(int function, const char *path, ...)
 				libtrash_fini(&cfg);
 				if(cfg.in_case_of_failure == ALLOW_DESTRUCTION)
 					return_value = return_real_function(function, path, mode, mode_str, flags, stream);
-				else /* if (cfg.in_case_of_failure == PROTECT) */
-					return_value = return_function_error(0);
+				else {	/* if (cfg.in_case_of_failure == PROTECT) */
+					return_value = return_function_error(function);
+					errno = 0;
+				}
 			}
 			else /* if graft_file() succeeded and the file is safely stored, proceed with the call to the real function: */
 			{
