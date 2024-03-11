@@ -188,7 +188,10 @@ sort_smallest () {
 
 
 create_list () {
-  find . -type f -printf "%${time}@ %s %p\n" 2> /dev/null
+  # The 's' modifier ensures integer seconds.  'libtrash' is for
+  # GNU/Linux, so we can expect that `strftime` (which `find` uses) is
+  # recent enough to provide this modifier.
+  find . -type f -printf "%${time}s %s %p\n" 2> /dev/null
 }
 
 
