@@ -104,6 +104,13 @@ the files.
 
 .SH GENERAL OPTIONS
 
+.IP "\fB--null, -0\fR"
+Use GNU extensions of the used tools in the script (\fBfind\fR,
+\fBsort\fR, etc.) to support unusual characters in file names, for
+example, newline characters.  If this option gets used, it must be
+used for all operations of \fBstrash\fR.  Remove the history file in
+case you no longer want to use this option.
+
 .IP "\fB--du, -d\fR"
 Use \fBdu\fR to compute the trash can size.
 
