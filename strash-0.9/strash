@@ -50,7 +50,7 @@ synopsis () {
 
 usage () {
   synopsis >&2
-  echo "Try \`strash --help' for more information." >&2
+  echo "Try 'strash --help' for more information." >&2
   out 1
 }
 
@@ -96,7 +96,7 @@ GNU STANDARD OPTIONS
 --version, -V                   Print version information.
 --                              Terminate option list.
 
-Report bugs to <strash@connes.org>.
+Report bugs at <https://github.com/pete4abw/libtrash/issues>.
 EOF
   out 0
 }
@@ -420,11 +420,11 @@ checks () {
   if [ "$method" = "_du" ] ; then
     # du method only apply to a size limit.
     if [ "$maxtype" != "size" ] ; then
-       error "\`du' method only apply to a trash can size limit."
+       error "'du' method only apply to a trash can size limit."
     fi
     # du method requires real file deletion.
     if [ $remove -eq 0 ] ; then
-      error "you can't disable deleting when using \`du'."
+      error "you can't disable deleting when using 'du'."
     fi
   fi
 
@@ -443,7 +443,7 @@ checks () {
         d|"") time_u="days" ;;
         M) time_u="months" ;;
         Y) time_u="years" ;;
-        *) error "\`$unit' is not a valid time unit." ;;
+        *) error "'$unit' is not a valid time unit." ;;
       esac
       limit=`date +"%s" -d "$number $time_u ago"`
       ;;
@@ -458,7 +458,7 @@ checks () {
         k) multiplier=$kilo ;;
         M) multiplier=$(($kilo * $kilo)) ;;
         G) multiplier=$(($kilo * $kilo * $kilo)) ;;
-        *) error "\`$unit' is not a valid size unit." ;;
+        *) error "'$unit' is not a valid size unit." ;;
       esac
       limit=$(($number * $multiplier))
       ;;
@@ -478,21 +478,21 @@ checks () {
 
   # Get configuration from libtrash configuration file.
   if [ ! -r "$conf_file" ] ; then
-    error "libtrash configuration file does not exist or is unreadble."
+    error "libtrash configuration file does not exist or is unreadable."
   fi
   trash_can=`grep '^TRASH_CAN *= *' "$conf_file" | sed -e 's/TRASH_CAN *= *//'`
   trash_system_root=`grep "^TRASH_SYSTEM_ROOT *= *" "$conf_file" |
                      sed -e 's/TRASH_SYSTEM_ROOT *= *//'`
   if [ -z "$trash_can" ] ; then
-    error "TRASH_CAN must be defined in \`$conf_file'."
+    error "TRASH_CAN must be defined in '$conf_file'."
   fi
   if [ -z "$trash_system_root" ] ; then
-    error "TRASH_SYSTEM_ROOT must be defined in \`$conf_file'"
+    error "TRASH_SYSTEM_ROOT must be defined in '$conf_file'"
   fi
 
   # Initialize temporary directories.
   if [ ! -d "$tmp_dir" ] ; then
-    error "temporary directory does not exist."
+    error "temporary directory '$tmp_dir' does not exist."
   fi
   tmp_file="$tmp_dir/strash.$$"
   tmp_history="$tmp_dir/strash_hist.$$"
