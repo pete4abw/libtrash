@@ -3,7 +3,7 @@
 .\"
 .\" strash strips files from libtrash trash cans.
 .\"
-.\" Copyright (C) Frederic Connes 2003
+.\" Copyright (C) Frederic Connes 2003-2024
 .\"
 .\" This program is free software; you can redistribute it and/or modify
 .\" it under the terms of the GNU General Public License as published by
@@ -20,7 +20,7 @@
 .\" Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307, USA.
 .\"
 
-.TH STRASH 8 "November 2003" "Version 0.9"
+.TH STRASH 8 "March 2024" "Version 0.91"
 .na
 .nf
 .Rs
@@ -33,7 +33,7 @@ strash \- strip files from libtrash trash cans
 
 .SH DESCRIPTION
 \fBstrash\fR is a Bourne shell script for use with libtrash by Manuel Arriaga
-(http://www.m-arriaga.net/software/libtrash/).
+(https://github.com/pete4abw/libtrash/).
 
 It will enforce age, number or size limits on libtrash trash cans so they
 won't eventually fill your storage space.
@@ -103,6 +103,13 @@ When removing the oldest files first, use the last status change time to sort
 the files.
 
 .SH GENERAL OPTIONS
+
+.IP "\fB--null, -0\fR"
+Use GNU extensions of the used tools in the script (\fBfind\fR,
+\fBsort\fR, etc.) to support unusual characters in file names, for
+example, newline characters.  If this option gets used, it must be
+used for all operations of \fBstrash\fR.  Remove the history file in
+case you no longer want to use this option.
 
 .IP "\fB--du, -d\fR"
 Use \fBdu\fR to compute the trash can size.
@@ -183,13 +190,13 @@ Libtrash configuration file.
 History file for each user.
 
 .SH BUGS
-Please report bugs to <strash@connes.org>.
+Please report bugs at <https://github.com/pete4abw/libtrash/issues>.
 
 .SH AUTHOR
 Written by Frederic Connes <fred@connes.org>.
 
 .SH COPYRIGHT
-Copyright (C) 2003 Frederic Connes.
+Copyright (C) 2003-2024 Frederic Connes.
 
 This is free software; see the source for copying conditions. There is NO
 warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE,

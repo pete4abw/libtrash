@@ -4,7 +4,10 @@
 #
 # This Bourne shell script strips files from libtrash trash cans.
 #
-# Copyright (C) 2003 Frederic Connes <fred@connes.org>.
+# Copyright (C) 2003-2024 Frederic Connes <fred@connes.org>.
+#
+# Extended 2024 by Werner Lemberg <wl@gnu.org> to handle file names
+# with unusual characters like newlines.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -22,6 +25,8 @@
 #
 # For more information about these matters, see the file named COPYING.
 #
+
+VERSION=0.91
 
 
 #------------------------------------------------------------------------------
@@ -50,7 +55,7 @@ synopsis () {
 
 usage () {
   synopsis >&2
-  echo "Try \`strash --help' for more information." >&2
+  echo "Try 'strash --help' for more information." >&2
   out 1
 }
 
@@ -79,6 +84,8 @@ FILES SORTING OPTIONS
 
 GENERAL OPTIONS
 ---------------
+--null, -0                      Use GNU extensions to support unusual
+                                file names (e.g., containing newlines).
 --du, -d                        Use du to compute the trash can size.
 --print, -p                     Print the name of the files that should be
                                 removed. Do not remove them.
@@ -96,16 +103,16 @@ GNU STANDARD OPTIONS
 --version, -V                   Print version information.
 --                              Terminate option list.
 
-Report bugs to <strash@connes.org>.
+Report bugs at <https://github.com/pete4abw/libtrash/issues>.
 EOF
   out 0
 }
 
 version () {
   cat <<EOF
-strash 0.9
+strash $VERSION
 
-Copyright (C) 2003 Frederic Connes.
+Copyright (C) 2003-2024 Frederic Connes.
 
 This is free software; see the source for copying conditions. There is NO
 warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE,
@@ -188,7 +195,10 @@ sort_smallest () {
 
 
 create_list () {
-  find . -type f -printf "%${time}@ %s %p\n" 2> /dev/null
+  # The 's' modifier ensures integer seconds.  'libtrash' is for
+  # GNU/Linux, so we can expect that `strftime` (which `find` uses) is
+  # recent enough to provide this modifier.
+  find . -type f -printf "%${time}s %s %p$eol" 2> /dev/null
 }
 
 
@@ -201,15 +211,15 @@ create_history ()
     read old_date old_size old_path
     while : ; do
       if [ "$old_path" = "$new_path" ] ; then
-        echo "$old_date $new_size $old_path"
+        printf "%s %s %s$eol" "$old_date" "$new_size" "$old_path"
         read new_date new_size new_path 0<&3 || break
         read old_date old_size old_path
       else
-        { echo "$old_path" ; echo "$new_path" ; } | sort -c 2> /dev/null
+        printf "%s$eol%s$eol" "$old_path" "$new_path" | sort -c 2> /dev/null
         if [ $? -eq 0 -a "$old_path" ] ; then
           read old_date old_size old_path
         else
-          echo "$new_date $new_size $new_path"
+          printf "%s %s %s$eol" "$new_date" "$new_size" "$new_path"
           read new_date new_size new_path 0<&3 || break
         fi
       fi
@@ -242,7 +252,7 @@ remove_number () {
   local number date size path
 
   # Get the total number of files.
-  number=`wc -l $tmp_file | sed -e 's/ *//' -e 's/ .*//'`
+  number=`tr '\n\0' '\0\n' < $tmp_file | wc -l | sed -e 's/ *//' -e 's/ .*//'`
 
   # Remove the files.
   exec 3< "$tmp_file"
@@ -324,7 +334,7 @@ delete () {
 remove_empty_dirs () {
   local dir
 
-  find . -type d | tac |
+  find . -type d -printf "%p$eol" | tac |
   while read dir ; do
     dir=`echo "$dir" | sed -e "s%^\./%%"`
     if [ "$dir" != "." -a "$dir" != "$trash_system_root" ] ; then
@@ -345,6 +355,7 @@ options () {
   sort="history"
   time="T"
   cmp="gt"
+  eol="\\n"
   remove=1
   kilo=1024
   quiet=0
@@ -372,6 +383,21 @@ options () {
       --sort=smallest|-s) sort="smallest" ; cmp=lt ;;
       --time=atime|--time=access|--time=use|-a) time="A" ;;
       --time=ctime|--time-status|-c) time="C" ;;
+      --null|-0)
+        eol="\\0"
+        read() {
+          builtin read -r -d '' $@
+        }
+        sort() {
+          command sort -z $@
+        }
+        tac() {
+          command tac -s '' $@
+        }
+        sed() {
+          command sed -z $@
+        }
+        ;;
       --user|-u) users="$users|^$2:" ; shift ;;
       --print|-p) remove=0 ;;
       --si|-H) kilo=1000 ;;
@@ -420,17 +446,17 @@ checks () {
   if [ "$method" = "_du" ] ; then
     # du method only apply to a size limit.
     if [ "$maxtype" != "size" ] ; then
-       error "\`du' method only apply to a trash can size limit."
+       error "'du' method only apply to a trash can size limit."
     fi
     # du method requires real file deletion.
     if [ $remove -eq 0 ] ; then
-      error "you can't disable deleting when using \`du'."
+      error "you can't disable deleting when using 'du'."
     fi
   fi
 
   # Compute the limit.
-  unit=`echo $limit | sed -e "s/^[0-9]*//"`
-  number=`echo $limit | sed -e "s/$unit$//"`
+  unit=`echo $limit | command sed -e "s/^[0-9]*//"`
+  number=`echo $limit | command sed -e "s/$unit$//"`
   if [ -z "$number" ] ; then
     error "the limit must be a positive integer."
   fi
@@ -443,7 +469,7 @@ checks () {
         d|"") time_u="days" ;;
         M) time_u="months" ;;
         Y) time_u="years" ;;
-        *) error "\`$unit' is not a valid time unit." ;;
+        *) error "'$unit' is not a valid time unit." ;;
       esac
       limit=`date +"%s" -d "$number $time_u ago"`
       ;;
@@ -458,7 +484,7 @@ checks () {
         k) multiplier=$kilo ;;
         M) multiplier=$(($kilo * $kilo)) ;;
         G) multiplier=$(($kilo * $kilo * $kilo)) ;;
-        *) error "\`$unit' is not a valid size unit." ;;
+        *) error "'$unit' is not a valid size unit." ;;
       esac
       limit=$(($number * $multiplier))
       ;;
@@ -474,25 +500,26 @@ checks () {
     error "/etc/passwd does not exit or is unreadable."
   fi
   users=`echo "$users" | cut -c 2-`
-  user_homes=`egrep "$users" /etc/passwd | cut -d: -f6 | sort -u`
+  user_homes=`egrep "$users" /etc/passwd | cut -d: -f6 | command sort -u`
 
   # Get configuration from libtrash configuration file.
   if [ ! -r "$conf_file" ] ; then
-    error "libtrash configuration file does not exist or is unreadble."
+    error "libtrash configuration file does not exist or is unreadable."
   fi
-  trash_can=`grep '^TRASH_CAN *= *' "$conf_file" | sed -e 's/TRASH_CAN *= *//'`
+  trash_can=`grep '^TRASH_CAN *= *' "$conf_file" |
+             command sed -e 's/TRASH_CAN *= *//'`
   trash_system_root=`grep "^TRASH_SYSTEM_ROOT *= *" "$conf_file" |
-                     sed -e 's/TRASH_SYSTEM_ROOT *= *//'`
+                     command sed -e 's/TRASH_SYSTEM_ROOT *= *//'`
   if [ -z "$trash_can" ] ; then
-    error "TRASH_CAN must be defined in \`$conf_file'."
+    error "TRASH_CAN must be defined in '$conf_file'."
   fi
   if [ -z "$trash_system_root" ] ; then
-    error "TRASH_SYSTEM_ROOT must be defined in \`$conf_file'"
+    error "TRASH_SYSTEM_ROOT must be defined in '$conf_file'"
   fi
 
   # Initialize temporary directories.
   if [ ! -d "$tmp_dir" ] ; then
-    error "temporary directory does not exist."
+    error "temporary directory '$tmp_dir' does not exist."
   fi
   tmp_file="$tmp_dir/strash.$$"
   tmp_history="$tmp_dir/strash_hist.$$"
