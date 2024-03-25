@@ -309,6 +309,7 @@ void libtrash_init(config *cfg)
 
 #ifdef DEBUG
 	fprintf(stderr,
+			"TRASH_OFF:                         NO\n"
 			"TRASH_CAN:                         %s\n"
 			"IN_CASE_OF_FAILURE:                %d\n"
 			"SHOULD_WARN:                       %d\n"
@@ -331,6 +332,7 @@ void libtrash_init(config *cfg)
 			"REMOVABLE_MEDIA_MOUNT_POINTS:      %s\n"
 			"EXCEPTIONS:                        %s\n"
 			"IGNORE_RE:                         %s\n"
+			"UNCOVER_DIRS:                      %s\n"
 			"PRESERVE_FILES_LARGER_THAN:        %llu\n\n",
 		cfg->relative_trash_can, cfg->in_case_of_failure, cfg->should_warn, cfg->ignore_hidden,
 		cfg->ignore_editor_backup, cfg->ignore_editor_temporary, cfg->protect_trash, cfg->global_protection,
@@ -340,7 +342,8 @@ void libtrash_init(config *cfg)
 		cfg->libtrash_config_file_unremovable,
 		cfg->removable_media_mount_points,
 		cfg->exceptions,
-		cfg->ignore_re,
+		*cfg->ignore_re != '\0' ? cfg->ignore_re : "not set",
+		cfg->uncovered_dirs != NULL ? cfg->uncovered_dirs : "not set",
 		cfg->preserve_files_larger_than_limit);
 #endif
 

@@ -1707,7 +1707,7 @@ int decide_action(const char *absolute_path, config *cfg)
 			ends_in_ignored_extension(absolute_path, cfg)                           ||      /* filename ends in an extension
 													 * we were told to ignore */
 
-			(strlen(cfg->ignore_re) > 0 && matches_re(absolute_path, cfg->ignore_re)) ||   /* file name matches the IGNORE_RE */
+			*cfg->ignore_re != '\0' && matches_re(absolute_path, cfg->ignore_re)	 ||   /* file name matches the IGNORE_RE */
 
 			found_under_dir(absolute_path, cfg->removable_media_mount_points)       ||      /* file is on a removable medium */
 
@@ -2154,8 +2154,7 @@ static int matches_re (const char *absolute_path, const char *regexp)
 #ifdef DEBUG
 		regex_report_error (ret, &compiled);
 #endif
-		regfree (&compiled);
-		return 0;
+		goto exit_matches_re;
 	}
 
 	ret = regexec (&compiled, absolute_path, 1, matches, 0);
@@ -2171,6 +2170,7 @@ static int matches_re (const char *absolute_path, const char *regexp)
 	}
 #endif
 
+exit_matches_re:
 	regfree (&compiled);
 
 	return (ret == 0);

@@ -357,13 +357,17 @@ starting with /etc/mtab.
 
 .B EXCEPTIONS = /etc/mtab;/etc/resolv.conf;/etc/adjtime;/etc/upsstatus;/etc/dhcpc
 
-Files which match this regular expression will be ignored.
+Files which match this regular expression will be ignored and deleted.
 
 WARNING:
 In the configuration file used at compile time all backslashes MUST be
 double, but in the personal configuration files they MUST NOT be double.
 (This is due to the fact that the C compiler interprets the backslash as
 an escape character.)
+
+Example: \fBIGNORE_RE = (config.*)|(conftest*)\fP
+
+will remove all files beginning with config OR all files beginning with conftest.
 
 .B IGNORE_RE =
 
@@ -396,14 +400,20 @@ If you enable this setting and wish to circumvent it, you can use TRASH_OFF=YES.
 .BR "Compile time Configuration"
 
 .RS
-stderr or run silently. You should either leave it set to NO (to
-disable the messages) or change NO to YES (to have libtrash print
-these messages) if you suspect something isn't working as it should:
+All settings are in configure.ac and set to common defaults. These
+may be overwritten in the user's libtrash configuration file.
+
+To build in DEBUG mode, run \fBconfigure --enable-debug\fP. Or
+you can edit configure.ac to build in DEBUG mode.
+
+Debug mode will output a lot of messages as the libtrash library
+does its work.
 
 .B DEBUG = NO
 
-This setting specifies the name (WITHOUT a leading slash) of the
-user-specific, personal configuration file:
+This setting specifies the name (without a leading slash) of the
+user-specific, personal configuration file located in the user's
+home directory.
 
 .B PERSONAL_CONF_FILE = .libtrash
 
