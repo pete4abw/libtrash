@@ -235,6 +235,20 @@ void libtrash_init(config *cfg)
 		return;
 	}
 
+	/* Has the user asked us to NOT PROTECT contents of the TRASH directory unilaterally? PROTECT_TRASH=NO */
+
+	tmp = getenv("PROTECT_TRASH");
+
+	if (tmp && !strcmp(tmp, "NO"))
+	{
+#ifdef DEBUG
+		fprintf(stderr, "PROTECT_TRASH is set to NO in the environment, TRASH directory is NOT PROTECTED.\n");
+#endif
+		cfg->protect_trash = NO;
+
+		return;
+	}
+
 	/* Has the user asked us to become temporarily inactive by setting the environment variable TRASH_OFF to
 	   YES? */
 
