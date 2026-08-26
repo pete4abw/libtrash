@@ -1660,10 +1660,16 @@ int decide_action(const char *absolute_path, config *cfg)
 	   value of cfg->protect_trash, also taking into consideration whether (or not) the trash can
 	   is currently listed in UNCOVER_DIRS: */
 
+#ifdef DEBUG
+	fprintf(stderr, "Absolute path: %s, Absolute Trash Can: %s\n", absolute_path, cfg->absolute_trash_can);
+#endif
 	if (found_under_dir(absolute_path, cfg->absolute_trash_can))
 	{
 		if (cfg->protect_trash == NO ||
 				found_under_dir(absolute_path, cfg->uncovered_dirs)) /* user temporarily disabled PROTECT_TRASH via UNCOVER_DIRS */
+#ifdef DEBUG
+			fprintf(stderr, "PROTECT_TRASH is set to NO\n");
+#endif
 			return BE_REMOVED;
 		else /* if cfg->protect_trash == YES && !found_under_dir(absolute_path, cfg->uncover_dirs) */
 			return BE_LEFT_UNTOUCHED;
