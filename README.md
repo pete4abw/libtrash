@@ -2,6 +2,15 @@
 
 ## A shared library which implements a highly configurable "recycle bin" or "trash can" under GNU/Linux
 
+## NOTE: DEVELOPMENT ON THIS PROJECT IS SUSPENDED AS OF 08/2026.
+After many years of working on this project and updating Manuel's great work,
+I have decided to archive this project and suspend development.
+
+If anyone else is interested in taking over, feel free.
+
+Thank you for your support!
+
+
 Written by Manuel Arriaga (marriaga@stern.nyu.edu).
 
 Copyright (C) 2001-2020 Manuel Arriaga
